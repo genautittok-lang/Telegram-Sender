@@ -78,7 +78,10 @@ Account scheduling options stored in database:
 
 ### Telegram API
 - **GramJS (telegram package)**: MTProto client library for Telegram API access
-- Requires per-account `apiId` and `apiHash` from Telegram's developer portal
+- **Simplified Authentication**: Users only need phone number + verification code (no API credentials required)
+- Default API credentials (Telegram Desktop public credentials) are used server-side
+- Optional: Set `TELEGRAM_API_ID` and `TELEGRAM_API_HASH` environment variables to use custom credentials
+- 2FA password handling: Uses SRP protocol via `computeCheck` from GramJS Password module
 - Sessions stored as encrypted strings in database
 
 ### UI Components
