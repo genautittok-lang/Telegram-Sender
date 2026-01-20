@@ -4,6 +4,10 @@ import { storage } from "./storage";
 import { type Account } from "@shared/schema";
 import { randomInt } from "crypto";
 
+// Default Telegram API credentials (Telegram Desktop public credentials)
+const DEFAULT_API_ID = 2040;
+const DEFAULT_API_HASH = "b18441a1ff607e10a989891a5462e627";
+
 // Map to store active clients: accountId -> Client
 const activeClients = new Map<number, TelegramClient>();
 // Map to store last sent time: accountId -> timestamp (ms)
@@ -16,35 +20,27 @@ function getDelayMs(min: number, max: number) {
 
 export class TelegramService {
     // === AUTH METHODS ===
+    
+    private tempClients = new Map<string, TelegramClient>();
 
-    async requestCode(phoneNumber: string, apiId: number, apiHash: string) {
-        const client = new TelegramClient(new StringSession(""), apiId, apiHash, {
+    async requestCode(phoneNumber: string) {
+        const client = new TelegramClient(new StringSession(""), DEFAULT_API_ID, DEFAULT_API_HASH, {
             connectionRetries: 5,
         });
         await client.connect();
         
         const { phoneCodeHash } = await client.sendCode(
             {
-                apiId,
-                apiHash,
+                apiId: DEFAULT_API_ID,
+                apiHash: DEFAULT_API_HASH,
             },
             phoneNumber
         );
         
-        // We don't keep this client connected, just need the hash
-        // In a real app, we might need to keep the client instance for the sign-in step to ensure same session ID context?
-        // GramJS usually allows stateless sign-in if we have the hash.
-        // But to be safe, we might need to cache this client temporarily.
-        // For simplicity, we'll try to recreate client in signIn. 
-        // If that fails, we'd need a temporary cache.
-        // *Correction*: SendCode + SignIn usually requires the same client instance or session context.
-        // We will store this temporary client in a cache.
         this.tempClients.set(phoneNumber, client);
         
         return phoneCodeHash;
     }
-    
-    private tempClients = new Map<string, TelegramClient>();
 
     async signIn(phoneNumber: string, phoneCode: string, phoneCodeHash: string, password?: string) {
         let client = this.tempClients.get(phoneNumber);
@@ -87,16 +83,16 @@ export class TelegramService {
     async startAccount(account: Account) {
         if (activeClients.has(account.id)) return; // Already running
 
-        if (!account.sessionString || !account.apiId || !account.apiHash) {
-            await storage.addLog(account.id, "error", "Missing session or API credentials");
+        if (!account.sessionString) {
+            await storage.addLog(account.id, "error", "Missing session - please re-authenticate");
             return;
         }
 
         try {
             const client = new TelegramClient(
                 new StringSession(account.sessionString),
-                account.apiId,
-                account.apiHash,
+                DEFAULT_API_ID,
+                DEFAULT_API_HASH,
                 { connectionRetries: 5 }
             );
 

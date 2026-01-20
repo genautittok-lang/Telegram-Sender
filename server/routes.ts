@@ -107,8 +107,8 @@ export async function registerRoutes(
 
   app.post(api.auth.requestCode.path, async (req, res) => {
       try {
-          const { phoneNumber, apiId, apiHash } = api.auth.requestCode.input.parse(req.body);
-          const phoneCodeHash = await telegramService.requestCode(phoneNumber, apiId, apiHash);
+          const { phoneNumber } = api.auth.requestCode.input.parse(req.body);
+          const phoneCodeHash = await telegramService.requestCode(phoneNumber);
           res.json({ phoneCodeHash });
       } catch (err: any) {
           res.status(400).json({ message: err.message });
@@ -117,19 +117,17 @@ export async function registerRoutes(
 
   app.post(api.auth.signIn.path, async (req, res) => {
       try {
-          const { phoneNumber, phoneCode, phoneCodeHash, password, apiId, apiHash } = api.auth.signIn.input.parse(req.body);
+          const { phoneNumber, phoneCode, phoneCodeHash, password } = api.auth.signIn.input.parse(req.body);
           const sessionString = await telegramService.signIn(phoneNumber, phoneCode, phoneCodeHash, password);
           
           // Check if account exists, update it. If not, create it.
           const existing = await storage.getAccountByPhone(phoneNumber);
           if (existing) {
-              await storage.updateAccount(existing.id, { sessionString, apiId, apiHash, status: 'idle' });
+              await storage.updateAccount(existing.id, { sessionString, status: 'idle' });
           } else {
               await storage.createAccount({ 
                   phoneNumber, 
                   sessionString, 
-                  apiId, 
-                  apiHash, 
                   status: 'idle',
                   minDelaySeconds: 60,
                   maxDelaySeconds: 180

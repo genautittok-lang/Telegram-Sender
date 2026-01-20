@@ -108,11 +108,9 @@ export type UpdateAccountRequest = Partial<CreateAccountRequest> & {
   isRunning?: boolean;
 };
 
-// Auth steps
+// Auth steps - simplified (no API credentials needed from user)
 export type AuthRequestCodeRequest = {
   phoneNumber: string;
-  apiId: number;
-  apiHash: string;
 };
 
 export type AuthSignInRequest = {

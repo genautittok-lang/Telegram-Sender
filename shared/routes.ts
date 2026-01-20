@@ -121,8 +121,6 @@ export const api = {
       path: '/api/auth/request-code',
       input: z.object({
         phoneNumber: z.string(),
-        apiId: z.number(),
-        apiHash: z.string(),
       }),
       responses: {
         200: z.object({ phoneCodeHash: z.string() }),
@@ -137,8 +135,6 @@ export const api = {
         phoneCode: z.string(),
         phoneCodeHash: z.string(),
         password: z.string().optional(),
-        apiId: z.number(),
-        apiHash: z.string(),
       }),
       responses: {
         200: z.object({ success: z.boolean() }),

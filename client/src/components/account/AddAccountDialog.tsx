@@ -12,8 +12,6 @@ export function AddAccountDialog() {
   const [step, setStep] = useState<1 | 2>(1);
   const [formData, setFormData] = useState({
     phoneNumber: "",
-    apiId: "",
-    apiHash: "",
     phoneCode: "",
     password: "",
   });
@@ -27,13 +25,10 @@ export function AddAccountDialog() {
     try {
       const res = await requestCode.mutateAsync({
         phoneNumber: formData.phoneNumber,
-        apiId: parseInt(formData.apiId),
-        apiHash: formData.apiHash,
       });
       setPhoneCodeHash(res.phoneCodeHash);
       setStep(2);
     } catch (e) {
-      // Error handled in hook toast
     }
   };
 
@@ -43,15 +38,12 @@ export function AddAccountDialog() {
         phoneNumber: formData.phoneNumber,
         phoneCode: formData.phoneCode,
         phoneCodeHash,
-        apiId: parseInt(formData.apiId),
-        apiHash: formData.apiHash,
         password: formData.password || undefined,
       });
       setOpen(false);
       setStep(1);
-      setFormData({ phoneNumber: "", apiId: "", apiHash: "", phoneCode: "", password: "" });
+      setFormData({ phoneNumber: "", phoneCode: "", password: "" });
     } catch (e) {
-      // Error handled in hook toast
     }
   };
 
@@ -81,31 +73,9 @@ export function AddAccountDialog() {
                   data-testid="input-phone"
                 />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="apiId">{t('apiId')}</Label>
-                <Input
-                  id="apiId"
-                  placeholder="123456"
-                  value={formData.apiId}
-                  onChange={(e) => setFormData({ ...formData, apiId: e.target.value })}
-                  className="font-mono"
-                  data-testid="input-api-id"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="apiHash">{t('apiHash')}</Label>
-                <Input
-                  id="apiHash"
-                  placeholder="abcdef123456..."
-                  value={formData.apiHash}
-                  onChange={(e) => setFormData({ ...formData, apiHash: e.target.value })}
-                  className="font-mono"
-                  data-testid="input-api-hash"
-                />
-              </div>
               <Button 
                 onClick={handleRequestCode} 
-                disabled={requestCode.isPending || !formData.phoneNumber || !formData.apiId || !formData.apiHash}
+                disabled={requestCode.isPending || !formData.phoneNumber}
                 data-testid="button-send-code"
               >
                 {requestCode.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
