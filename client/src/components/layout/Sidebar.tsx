@@ -1,8 +1,9 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, Layers, Terminal, Activity, Globe } from "lucide-react";
+import { LayoutDashboard, Users, Terminal, Activity, Globe, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage, Language } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,24 +20,39 @@ const languages: { code: Language; label: string; flag: string }[] = [
 export function Sidebar() {
   const [location] = useLocation();
   const { t, lang, setLang } = useLanguage();
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Close sidebar on location change on mobile
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location]);
 
   const navigation = [
     { name: t('dashboard'), href: '/', icon: LayoutDashboard },
     { name: t('accounts'), href: '/accounts', icon: Users },
-    { name: t('groups'), href: '/groups', icon: Layers },
     { name: t('logs'), href: '/logs', icon: Terminal },
   ];
 
   const currentLang = languages.find(l => l.code === lang);
 
-  return (
-    <div className="flex flex-col w-64 border-r border-border bg-card h-screen sticky top-0">
+  const sidebarContent = (
+    <div className="flex flex-col h-full">
       <div className="p-6">
-        <div className="flex items-center gap-2 mb-8">
-          <Activity className="h-8 w-8 text-primary" />
-          <h1 className="text-xl font-bold tracking-tight text-foreground">
-            Tele<span className="text-primary">Matic</span>
-          </h1>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-2">
+            <Activity className="h-8 w-8 text-primary" />
+            <h1 className="text-xl font-bold tracking-tight text-foreground">
+              Tele<span className="text-primary">Matic</span>
+            </h1>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="lg:hidden" 
+            onClick={() => setIsOpen(false)}
+          >
+            <X className="h-6 w-6" />
+          </Button>
         </div>
         
         <nav className="space-y-1">
@@ -95,5 +111,42 @@ export function Sidebar() {
         </div>
       </div>
     </div>
+  );
+
+  return (
+    <>
+      {/* Mobile Toggle */}
+      <div className="lg:hidden fixed top-4 left-4 z-50">
+        <Button 
+          variant="outline" 
+          size="icon" 
+          onClick={() => setIsOpen(true)}
+          className="bg-card shadow-lg"
+        >
+          <Menu className="h-6 w-6" />
+        </Button>
+      </div>
+
+      {/* Sidebar Desktop */}
+      <aside className="hidden lg:flex flex-col w-64 border-r border-border bg-card h-screen sticky top-0">
+        {sidebarContent}
+      </aside>
+
+      {/* Sidebar Mobile Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+      
+      {/* Sidebar Mobile Drawer */}
+      <aside className={cn(
+        "fixed inset-y-0 left-0 w-64 bg-card border-r border-border z-50 transition-transform duration-300 lg:hidden",
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        {sidebarContent}
+      </aside>
+    </>
   );
 }

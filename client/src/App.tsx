@@ -8,7 +8,6 @@ import NotFound from "@/pages/not-found";
 
 import Dashboard from "@/pages/Dashboard";
 import Accounts from "@/pages/Accounts";
-import Groups from "@/pages/Groups";
 import Logs from "@/pages/Logs";
 
 import { LanguageContext, Language, translations, TranslationKey } from "@/lib/i18n";
@@ -18,7 +17,6 @@ function Router() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/accounts" component={Accounts} />
-      <Route path="/groups" component={Groups} />
       <Route path="/logs" component={Logs} />
       <Route component={NotFound} />
     </Switch>

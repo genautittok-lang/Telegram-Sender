@@ -6,7 +6,7 @@ TeleMatic is a full-stack Telegram account automation platform built for managin
 
 The core functionality includes:
 - Telegram account authentication via phone code verification
-- Bulk recipient management with parsing support
+- Bulk recipient management with parsing support (Name — Date — Phone)
 - Configurable message delays and scheduling (manual, daily, weekly)
 - Multi-language support (English, Ukrainian, Russian)
 - Real-time status monitoring and logging
@@ -24,7 +24,7 @@ Preferred communication style: Simple, everyday language.
 - **Styling**: Tailwind CSS with shadcn/ui component library (New York style)
 - **Build Tool**: Vite with path aliases (@/, @shared/, @assets/)
 
-The frontend follows a page-based structure with reusable components. Dark mode is forced by default. The UI includes Dashboard, Accounts, Groups, and Logs pages with a persistent sidebar navigation.
+The frontend follows a page-based structure with reusable components. Dark mode is forced by default. The UI includes Dashboard, Accounts, and Logs pages with a persistent sidebar navigation. Responsive design supported for mobile and desktop.
 
 ### Backend Architecture
 - **Framework**: Express 5 on Node.js

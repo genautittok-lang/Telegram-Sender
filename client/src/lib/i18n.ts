@@ -6,7 +6,6 @@ export const translations = {
   en: {
     dashboard: 'Dashboard',
     accounts: 'Accounts',
-    groups: 'Groups',
     logs: 'Logs',
     settings: 'Settings',
     totalAccounts: 'Total Accounts',
@@ -101,7 +100,6 @@ export const translations = {
     created: 'Created',
     sharedTemplate: 'Shared Message Template',
   },
-  
   uk: {
     dashboard: 'Панель',
     accounts: 'Акаунти',
@@ -200,7 +198,6 @@ export const translations = {
     created: 'Створено',
     sharedTemplate: 'Спільний шаблон',
   },
-  
   ru: {
     dashboard: 'Панель',
     accounts: 'Аккаунты',
@@ -281,7 +278,7 @@ export const translations = {
     info: 'Инфо',
     warn: 'Предупреждение',
     systemOperational: 'Система работает',
-    added: 'Добавлено',
+    added: 'Додано',
     deleteConfirm: 'Удалить аккаунт? Это действие нельзя отменить.',
     clearConfirm: 'Вы уверены, что хотите удалить ВСЕХ получателей этого аккаунта?',
     noAccountsFound: 'Аккаунтов не найдено. Добавьте один, чтобы начать.',
@@ -351,14 +348,44 @@ export function extractPhoneNumber(line: string): string | null {
   return null;
 }
 
+export function extractRecipientData(line: string): { phone: string; name?: string; date?: string } | null {
+  // Pattern: Name — Date — Phone
+  // Example: Овчинникова Ольга Станиславовна — 2007-01-05 — +79500731429
+  const parts = line.split(/[—\-\|]/).map(p => p.trim());
+  
+  let phone: string | null = null;
+  let name: string | undefined;
+  let date: string | undefined;
+
+  if (parts.length >= 3) {
+    // Try to find phone in parts
+    for (let i = 0; i < parts.length; i++) {
+      const p = parts[i];
+      const extracted = extractPhoneNumber(p);
+      if (extracted) {
+        phone = extracted;
+        // Assume name is the first part if not the phone
+        if (i > 0) name = parts[0];
+        // Assume date is the part before phone if 3+ parts
+        if (i > 1) date = parts[i-1];
+        break;
+      }
+    }
+  } else {
+    phone = extractPhoneNumber(line);
+  }
+
+  return phone ? { phone, name, date } : null;
+}
+
 export function parseRecipientsList(text: string): string[] {
   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   const phones: string[] = [];
   
   for (const line of lines) {
-    const phone = extractPhoneNumber(line);
-    if (phone) {
-      phones.push(phone);
+    const data = extractRecipientData(line);
+    if (data) {
+      phones.push(data.phone);
     }
   }
   
