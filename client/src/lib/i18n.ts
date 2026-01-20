@@ -101,6 +101,12 @@ export const translations = {
     sharedTemplate: 'Shared Message Template',
     apiCredentials: 'API Credentials (recommended)',
     apiCredentialsHint: 'Using your own API credentials reduces ban risk. Get them at my.telegram.org/apps',
+    testNow: 'Test',
+    testSmsSuccess: 'SMS test passed! Code request sent successfully.',
+    testSmsFailed: 'SMS test failed. Check the phone number.',
+    kyivTime: 'Kyiv time',
+    qrLogin: 'QR Login',
+    scanQrCode: 'Scan this QR code with Telegram app',
   },
   uk: {
     dashboard: 'Панель',
@@ -201,6 +207,12 @@ export const translations = {
     sharedTemplate: 'Спільний шаблон',
     apiCredentials: 'API ключі (рекомендовано)',
     apiCredentialsHint: 'Використання власних API ключів зменшує ризик бану. Отримайте на my.telegram.org/apps',
+    testNow: 'Тест',
+    testSmsSuccess: 'SMS тест пройдено! Код успішно надіслано.',
+    testSmsFailed: 'SMS тест не пройдено. Перевірте номер телефону.',
+    kyivTime: 'за Києвом',
+    qrLogin: 'QR вхід',
+    scanQrCode: 'Скануйте QR код в додатку Telegram',
   },
   ru: {
     dashboard: 'Панель',
@@ -301,6 +313,12 @@ export const translations = {
     sharedTemplate: 'Общий шаблон',
     apiCredentials: 'API ключи (рекомендуется)',
     apiCredentialsHint: 'Использование своих API ключей уменьшает риск бана. Получите на my.telegram.org/apps',
+    testNow: 'Тест',
+    testSmsSuccess: 'SMS тест пройден! Код успешно отправлен.',
+    testSmsFailed: 'SMS тест не пройден. Проверьте номер телефона.',
+    kyivTime: 'по Киеву',
+    qrLogin: 'QR вход',
+    scanQrCode: 'Сканируйте QR код в приложении Telegram',
   },
 };
 

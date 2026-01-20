@@ -1,0 +1,107 @@
+ at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+    at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+    at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+    at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+    at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+    at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+    at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+    at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+    at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+    at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+    at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+    at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)
+4:59:30 PM [express] GET /api/accounts 200 in 2ms :: [{"id":4,"phoneNumber":"+7 999 750 0434","sessionString":"1AgAOMTQ5LjE1NC4xNjcuNTEBu6Cv+Smuh9aysK4iXkp3sRGirfYt/Zmz9g61dTEzV+NhFYk5eL1D5D123/ValtCKpQ4zxDMGKalrIbBCBAf87iEcpTvfpwzBe0o1qZnNNPso5aWs1odQs5c6771g4nS9oFvWeEU8AOotluO+FaJxfR7QB9eEEOgn2YK4ephx77si33FqIfw4AcjvAMirCtr+bIzGZWD/wJmspN4oDSLlnmAl2HFh/XJxRAXPPnmTn0S1jX/onxWyQoQs5HFHZ7WH8rb/JCpvb5UdsFkGL5gjtIih5jvUBvfLFPvTFK+oSJp+QvmTCIEQub9tfM7eF8jVD8junGSicd4BG5jHy6qfClA=","apiId":null,"apiHash":null,"proxyUrl":null,"groupId":null,"messageTemplate":"Дебил","isRunning":true,"status":"idle","lastError":null,"minDelaySeconds":5,"maxDelaySeconds":5,"scheduleType":"manual","scheduleTime":"18:23","scheduleDays":[],"createdAt":"2026-01-20T16:21:28.202Z"}]
+4:59:31 PM [express] GET /api/accounts/4/recipients 200 in 3ms :: [{"id":7,"accountId":4,"identifier":"+380500235459","status":"failed","errorMessage":"Cannot find Telegram user with phone +380500235459","sentAt":null}]
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+    at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)
+4:59:33 PM [express] GET /api/logs 200 in 4ms :: [{"id":26,"accountId":4,"level":"info","message":"Account started","createdAt":"2026-01-20T16:32:37.284Z"},{"id":25,"accountId":4,"level":"info","message":"Account stopped","createdAt":"2026-01-20T16:32:32.925Z"},{"id":24,"accountId":4,"level":"error","message":"Failed to send to +380500235459: Cannot find Telegram user with phone +380500235459","createdAt":"2026-01-20T16:32:30.758Z"},{"id":23,"accountId":4,"level":"error","message":"Failed to send to +380734747025: Cannot find Telegram user with phone +380734747025","createdAt":"2026-01-20T16:27:10.657Z"},{"id":22,"accountId":4,"level":"info","message":"Account started","createdAt":"2026-01-20T16:27:01.664Z"},{"id":21,"accountId":4,"level":"info","message":"Account stopped","createdAt":"2026-01-20T16:24:37.485Z"},{"id":20,"accountId":4,"level":"info","message":"Sent message to +380734747025","createdAt":"2026-01-20T16:23:30.650Z"},{"id":19,"accountId":4,"level":"info","message":"Account started","createdAt":"2026-01-20T16:22:27.999Z"}]
+4:59:35 PM [express] GET /api/logs 304 in 2ms :: [{"id":26,"accountId":4,"level":"info","message":"Account started","createdAt":"2026-01-20T16:32:37.284Z"},{"id":25,"accountId":4,"level":"info","message":"Account stopped","createdAt":"2026-01-20T16:32:32.925Z"},{"id":24,"accountId":4,"level":"error","message":"Failed to send to +380500235459: Cannot find Telegram user with phone +380500235459","createdAt":"2026-01-20T16:32:30.758Z"},{"id":23,"accountId":4,"level":"error","message":"Failed to send to +380734747025: Cannot find Telegram user with phone +380734747025","createdAt":"2026-01-20T16:27:10.657Z"},{"id":22,"accountId":4,"level":"info","message":"Account started","createdAt":"2026-01-20T16:27:01.664Z"},{"id":21,"accountId":4,"level":"info","message":"Account stopped","createdAt":"2026-01-20T16:24:37.485Z"},{"id":20,"accountId":4,"level":"info","message":"Sent message to +380734747025","createdAt":"2026-01-20T16:23:30.650Z"},{"id":19,"accountId":4,"level":"info","message":"Account started","createdAt":"2026-01-20T16:22:27.999Z"}]
+4:59:36 PM [express] GET /api/stats 200 in 13ms :: {"totalAccounts":1,"activeAccounts":1,"messagesSent":0,"errors":1}
+4:59:41 PM [express] GET /api/accounts 304 in 2ms :: [{"id":4,"phoneNumber":"+7 999 750 0434","sessionString":"1AgAOMTQ5LjE1NC4xNjcuNTEBu6Cv+Smuh9aysK4iXkp3sRGirfYt/Zmz9g61dTEzV+NhFYk5eL1D5D123/ValtCKpQ4zxDMGKalrIbBCBAf87iEcpTvfpwzBe0o1qZnNNPso5aWs1odQs5c6771g4nS9oFvWeEU8AOotluO+FaJxfR7QB9eEEOgn2YK4ephx77si33FqIfw4AcjvAMirCtr+bIzGZWD/wJmspN4oDSLlnmAl2HFh/XJxRAXPPnmTn0S1jX/onxWyQoQs5HFHZ7WH8rb/JCpvb5UdsFkGL5gjtIih5jvUBvfLFPvTFK+oSJp+QvmTCIEQub9tfM7eF8jVD8junGSicd4BG5jHy6qfClA=","apiId":null,"apiHash":null,"proxyUrl":null,"groupId":null,"messageTemplate":"Дебил","isRunning":true,"status":"idle","lastError":null,"minDelaySeconds":5,"maxDelaySeconds":5,"scheduleType":"manual","scheduleTime":"18:23","scheduleDays":[],"createdAt":"2026-01-20T16:21:28.202Z"}]
+4:59:41 PM [express] GET /api/stats 304 in 6ms :: {"totalAccounts":1,"activeAccounts":1,"messagesSent":0,"errors":1}
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+    at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+    at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+    at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+    at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+    at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+    at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+    at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+    at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+    at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+    at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)
+    at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+Error: TIMEOUT
+    at /app/node_modules/telegram/client/updates.js:250:85
+    at async attempts (/app/node_modules/telegram/client/updates.js:234:20)
+    at async _updateLoop (/app/node_modules/telegram/client/updates.js:184:17)

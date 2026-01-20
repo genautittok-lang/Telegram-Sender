@@ -147,6 +147,63 @@ export async function registerRoutes(
       }
   });
 
+  // Test SMS - verify phone can receive codes (ephemeral, no session saved)
+  app.post('/api/auth/test-sms', async (req, res) => {
+      try {
+          const { phoneNumber } = req.body;
+          if (!phoneNumber) return res.status(400).json({ message: "Phone number required" });
+          await telegramService.testSms(phoneNumber);
+          res.json({ success: true });
+      } catch (err: any) {
+          res.status(400).json({ message: err.message });
+      }
+  });
+
+  // QR Login - generate token
+  app.post('/api/auth/qr-generate', async (req, res) => {
+      try {
+          const result = await telegramService.generateQrToken();
+          res.json(result);
+      } catch (err: any) {
+          res.status(400).json({ message: err.message });
+      }
+  });
+
+  // QR Login - check status
+  app.get('/api/auth/qr-status/:qrId', async (req, res) => {
+      try {
+          const result = await telegramService.checkQrStatus(req.params.qrId);
+          
+          if (result.status === 'success' && result.phoneNumber && result.sessionString) {
+              // Save the account
+              const existing = await storage.getAccountByPhone(result.phoneNumber);
+              if (existing) {
+                  await storage.updateAccount(existing.id, { 
+                      sessionString: result.sessionString,
+                      status: 'idle' 
+                  });
+              } else {
+                  await storage.createAccount({ 
+                      phoneNumber: result.phoneNumber, 
+                      sessionString: result.sessionString,
+                      status: 'idle',
+                      minDelaySeconds: 60,
+                      maxDelaySeconds: 180
+                  });
+              }
+          }
+          
+          // Include updated token if available (for QR refresh)
+          res.json({
+              status: result.status,
+              token: result.token,
+              expires: result.expires,
+          });
+      } catch (err: any) {
+          res.status(400).json({ message: err.message });
+      }
+  });
+
   // === CONTROL ===
 
   app.post(api.control.global.path, async (req, res) => {

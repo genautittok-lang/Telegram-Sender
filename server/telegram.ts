@@ -4,6 +4,9 @@ import { computeCheck } from "telegram/Password";
 import { storage } from "./storage";
 import { type Account } from "@shared/schema";
 import { randomInt } from "crypto";
+import { toZonedTime, fromZonedTime } from "date-fns-tz";
+
+const KYIV_TIMEZONE = "Europe/Kyiv";
 
 // Telegram API credentials - Use env vars if set, otherwise fall back to Telegram Desktop public credentials
 // WARNING: Using public credentials for bulk messaging increases ban risk
@@ -137,6 +140,147 @@ export class TelegramService {
         this.tempClients.set(phoneNumber, { client, ...credentials });
         
         return phoneCodeHash;
+    }
+
+    async testSms(phoneNumber: string) {
+        const client = new TelegramClient(new StringSession(""), DEFAULT_API_ID, DEFAULT_API_HASH, {
+            connectionRetries: 5,
+        });
+        await client.connect();
+        
+        try {
+            await client.sendCode(
+                { apiId: DEFAULT_API_ID, apiHash: DEFAULT_API_HASH },
+                phoneNumber
+            );
+        } finally {
+            await client.disconnect();
+        }
+    }
+
+    // QR Code Login
+    private qrClients = new Map<string, { client: TelegramClient; token: Buffer; expires: number }>();
+
+    async generateQrToken(): Promise<{ token: string; expires: number; qrId: string }> {
+        const qrId = Math.random().toString(36).substring(2, 15);
+        const client = new TelegramClient(new StringSession(""), DEFAULT_API_ID, DEFAULT_API_HASH, {
+            connectionRetries: 5,
+        });
+        await client.connect();
+
+        const result = await client.invoke(
+            new Api.auth.ExportLoginToken({
+                apiId: DEFAULT_API_ID,
+                apiHash: DEFAULT_API_HASH,
+                exceptIds: [],
+            })
+        );
+
+        if (result instanceof Api.auth.LoginToken) {
+            const tokenBase64 = result.token.toString('base64url');
+            this.qrClients.set(qrId, { 
+                client, 
+                token: result.token, 
+                expires: result.expires 
+            });
+            
+            // Auto-cleanup after 2 minutes
+            setTimeout(() => {
+                const qrData = this.qrClients.get(qrId);
+                if (qrData) {
+                    qrData.client.disconnect();
+                    this.qrClients.delete(qrId);
+                }
+            }, 120000);
+
+            return { 
+                token: `tg://login?token=${tokenBase64}`, 
+                expires: result.expires,
+                qrId 
+            };
+        }
+        
+        throw new Error("Failed to generate QR login token");
+    }
+
+    async checkQrStatus(qrId: string): Promise<{ status: 'pending' | 'success' | 'expired'; phoneNumber?: string; sessionString?: string; token?: string; expires?: number }> {
+        const qrData = this.qrClients.get(qrId);
+        if (!qrData) return { status: 'expired' };
+
+        const now = Math.floor(Date.now() / 1000);
+        if (now > qrData.expires) {
+            qrData.client.disconnect();
+            this.qrClients.delete(qrId);
+            return { status: 'expired' };
+        }
+
+        try {
+            // Use ImportLoginToken to check if user has approved the QR login
+            const result = await qrData.client.invoke(
+                new Api.auth.ImportLoginToken({
+                    token: qrData.token,
+                })
+            );
+
+            if (result instanceof Api.auth.LoginTokenSuccess) {
+                // User has scanned QR and approved login
+                const auth = result.authorization;
+                if (auth instanceof Api.auth.Authorization) {
+                    const user = auth.user;
+                    const sessionString = (qrData.client.session as StringSession).save();
+                    const phoneNumber = (user as Api.User).phone || 'unknown';
+                    
+                    qrData.client.disconnect();
+                    this.qrClients.delete(qrId);
+                    
+                    return { 
+                        status: 'success', 
+                        phoneNumber: '+' + phoneNumber,
+                        sessionString 
+                    };
+                }
+            } else if (result instanceof Api.auth.LoginToken) {
+                // Still pending - update token and expires for next check
+                qrData.token = result.token;
+                qrData.expires = result.expires;
+                const tokenBase64 = result.token.toString('base64url');
+                return { 
+                    status: 'pending', 
+                    token: `tg://login?token=${tokenBase64}`,
+                    expires: result.expires 
+                };
+            } else if (result instanceof Api.auth.LoginTokenMigrateTo) {
+                // Need to migrate to different DC - re-export token on that DC
+                // For simplicity, we'll regenerate the QR
+                qrData.client.disconnect();
+                this.qrClients.delete(qrId);
+                return { status: 'expired' };
+            }
+            
+            // Return current token if no update
+            const tokenBase64 = qrData.token.toString('base64url');
+            return { 
+                status: 'pending',
+                token: `tg://login?token=${tokenBase64}`,
+                expires: qrData.expires
+            };
+        } catch (err: any) {
+            const errMsg = err.message || err.errorMessage || '';
+            
+            // Token not yet accepted - still pending
+            if (errMsg.includes('AUTH_TOKEN_INVALID') || err.errorMessage === 'AUTH_TOKEN_INVALID') {
+                return { status: 'pending' };
+            }
+            
+            if (errMsg.includes('AUTH_TOKEN_EXPIRED') || err.errorMessage === 'AUTH_TOKEN_EXPIRED') {
+                qrData.client.disconnect();
+                this.qrClients.delete(qrId);
+                return { status: 'expired' };
+            }
+            
+            // Other errors - treat as pending
+            return { status: 'pending' };
+        }
     }
 
     async signIn(phoneNumber: string, phoneCode: string, phoneCodeHash: string, password?: string) {
@@ -409,6 +553,50 @@ export class TelegramService {
         }
     }
 
+    // === SCHEDULER (Kyiv Timezone) ===
+    private schedulerInterval: NodeJS.Timeout | null = null;
+
+    startScheduler() {
+        if (this.schedulerInterval) return;
+        
+        this.schedulerInterval = setInterval(async () => {
+            try {
+                await this.checkSchedules();
+            } catch (e) {
+                console.error("Scheduler error:", e);
+            }
+        }, 60000); // Check every minute
+        
+        // Initial check
+        this.checkSchedules();
+    }
+
+    private async checkSchedules() {
+        const accounts = await storage.getAccounts();
+        const now = new Date();
+        const kyivNow = toZonedTime(now, KYIV_TIMEZONE);
+        const kyivTime = `${String(kyivNow.getHours()).padStart(2, '0')}:${String(kyivNow.getMinutes()).padStart(2, '0')}`;
+        const dayMap: Record<number, string> = { 0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat' };
+        const kyivDay = dayMap[kyivNow.getDay()];
+
+        for (const account of accounts) {
+            if (account.isRunning) continue; // Already running
+            if (account.scheduleType === 'manual') continue;
+            if (!account.scheduleTime) continue;
+
+            const shouldStart = 
+                (account.scheduleType === 'daily' && account.scheduleTime === kyivTime) ||
+                (account.scheduleType === 'weekly' && 
+                 account.scheduleTime === kyivTime && 
+                 account.scheduleDays?.includes(kyivDay));
+
+            if (shouldStart) {
+                await storage.addLog(account.id, "info", `Scheduled start (${KYIV_TIMEZONE})`);
+                this.startAccount(account);
+            }
+        }
+    }
+
     // === INITIALIZATION ===
     async initialize() {
         const accounts = await storage.getAccounts();
@@ -418,6 +606,7 @@ export class TelegramService {
             }
         }
         this.runWorker();
+        this.startScheduler();
     }
 }
 

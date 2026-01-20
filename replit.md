@@ -58,11 +58,13 @@ The `/shared` directory contains code used by both frontend and backend:
 - **Storage**: Language preference saved to localStorage
 - **Phone Parsing**: `parseRecipientsList()` extracts Russian mobile numbers from formats like "Name — Date — +79001234567" and normalizes them to +7 format
 
-### Scheduling System
+### Scheduling System (Kyiv Timezone)
 Account scheduling options stored in database:
 - `scheduleType`: 'manual' | 'daily' | 'weekly'
-- `scheduleTime`: Time string like "09:00"
+- `scheduleTime`: Time string like "09:00" (interpreted as Kyiv time)
 - `scheduleDays`: Array of day codes like ['mon', 'wed', 'fri'] for weekly scheduling
+- Scheduler runs every minute, checking if current Kyiv time matches any account's schedule
+- Uses `date-fns-tz` for timezone conversion (Europe/Kyiv)
 
 ### Build Process
 - Development: Vite dev server with HMR proxied through Express
@@ -82,6 +84,7 @@ Account scheduling options stored in database:
 - **Fallback Credentials**: If not provided, uses Telegram Desktop public credentials (higher ban risk for bulk messaging)
 - **2FA Password Handling**: Uses SRP protocol via `computeCheck` from GramJS Password module
 - **Sessions**: Stored as encrypted StringSession in database with per-account API credentials
+- **QR Login Flow**: Uses ExportLoginToken to generate QR, ImportLoginToken to poll for approval. Tokens rotate during polling and are sent to frontend for QR refresh. Returns LoginTokenSuccess when user scans and approves on mobile Telegram.
 
 ### Anti-Ban Safety Features (server/telegram.ts)
 - **Enforced Minimum Delays**: At least 30 seconds between messages (configurable higher)

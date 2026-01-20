@@ -270,6 +270,23 @@ export function useSignIn() {
   });
 }
 
+export function useTestSms() {
+  return useMutation({
+    mutationFn: async ({ phoneNumber }: { phoneNumber: string }) => {
+      const res = await fetch('/api/auth/test-sms', {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phoneNumber }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Test failed");
+      }
+      return res.json();
+    },
+  });
+}
+
 // --- HOOKS FOR GLOBAL STATS & LOGS ---
 
 export function useStats() {

@@ -128,8 +128,6 @@ function SettingsDialog({ account }: { account: any }) {
   const update = useUpdateAccount();
   const { t } = useLanguage();
   const [template, setTemplate] = useState(account.messageTemplate || "");
-  const [minDelay, setMinDelay] = useState(account.minDelaySeconds || 60);
-  const [maxDelay, setMaxDelay] = useState(account.maxDelaySeconds || 180);
   const [scheduleType, setScheduleType] = useState(account.scheduleType || "manual");
   const [scheduleTime, setScheduleTime] = useState(account.scheduleTime || "09:00");
   const [scheduleDays, setScheduleDays] = useState<string[]>(account.scheduleDays || []);
@@ -138,8 +136,6 @@ function SettingsDialog({ account }: { account: any }) {
     await update.mutateAsync({ 
       id: account.id, 
       messageTemplate: template,
-      minDelaySeconds: Number(minDelay),
-      maxDelaySeconds: Number(maxDelay),
       scheduleType,
       scheduleTime,
       scheduleDays
@@ -175,31 +171,11 @@ function SettingsDialog({ account }: { account: any }) {
             />
             <p className="text-xs text-muted-foreground">{t('templateOverride')}</p>
           </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-             <div className="grid gap-2">
-                <Label>{t('minDelay')}</Label>
-                <Input 
-                  type="number" 
-                  value={minDelay} 
-                  onChange={(e) => setMinDelay(e.target.value)} 
-                  data-testid="input-min-delay"
-                />
-             </div>
-             <div className="grid gap-2">
-                <Label>{t('maxDelay')}</Label>
-                <Input 
-                  type="number" 
-                  value={maxDelay} 
-                  onChange={(e) => setMaxDelay(e.target.value)} 
-                  data-testid="input-max-delay"
-                />
-             </div>
-          </div>
 
           <div className="border-t border-border pt-4">
             <h4 className="text-sm font-medium mb-4 flex items-center gap-2">
               <Clock className="h-4 w-4" /> {t('schedule')}
+              <span className="text-xs text-muted-foreground font-normal">({t('kyivTime')})</span>
             </h4>
             
             <div className="grid gap-4">
