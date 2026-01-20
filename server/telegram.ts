@@ -18,6 +18,10 @@ const lastSentTime = new Map<number, number>();
 const floodWaitUntil = new Map<number, number>();
 // Map to store messages sent today per account
 const dailyMessageCount = new Map<number, { count: number; resetAt: number }>();
+// Map to store contacts imported today per account
+const dailyImportCount = new Map<number, { count: number; resetAt: number }>();
+// Map to store next allowed send time per account (for randomized delays)
+const nextSendTime = new Map<number, number>();
 
 // Safe limits to avoid bans
 const SAFE_LIMITS = {
@@ -25,13 +29,15 @@ const SAFE_LIMITS = {
     maxDelaySeconds: 90,       // Maximum 90 seconds
     messagesPerHour: 50,       // Max 50 messages per hour
     dailyMessageLimit: 200,    // Max 200 messages per day
+    dailyImportLimit: 50,      // Max 50 contact imports per day
     floodWaitBuffer: 10,       // Extra seconds after flood wait
 };
 
 // Helper to get random delay between min and max (seconds) -> ms
+// Enforces safe minimum but allows higher configured values
 function getDelayMs(min: number, max: number) {
     const safeMin = Math.max(min, SAFE_LIMITS.minDelaySeconds);
-    const safeMax = Math.max(max, SAFE_LIMITS.maxDelaySeconds);
+    const safeMax = Math.max(max, safeMin); // Allow higher max, but at least safeMin
     return randomInt(safeMin, safeMax + 1) * 1000;
 }
 
@@ -65,6 +71,43 @@ function incrementDailyCount(accountId: number) {
     if (stats) {
         stats.count++;
     }
+}
+
+// Check and update daily import count
+function checkDailyImportLimit(accountId: number): boolean {
+    const now = Date.now();
+    const stats = dailyImportCount.get(accountId);
+    
+    // Reset if new day
+    if (!stats || now > stats.resetAt) {
+        dailyImportCount.set(accountId, { 
+            count: 0, 
+            resetAt: now + 24 * 60 * 60 * 1000 
+        });
+        return true;
+    }
+    
+    return stats.count < SAFE_LIMITS.dailyImportLimit;
+}
+
+function incrementDailyImportCount(accountId: number) {
+    const stats = dailyImportCount.get(accountId);
+    if (stats) {
+        stats.count++;
+    }
+}
+
+// Schedule next send with randomized delay
+function scheduleNextSend(accountId: number, minSeconds: number, maxSeconds: number) {
+    const delay = getDelayMs(minSeconds, maxSeconds);
+    nextSendTime.set(accountId, Date.now() + delay);
+}
+
+// Check if it's time to send
+function canSendNow(accountId: number): boolean {
+    const nextTime = nextSendTime.get(accountId);
+    if (!nextTime) return true; // First send
+    return Date.now() >= nextTime;
 }
 
 export class TelegramService {
@@ -172,8 +215,18 @@ export class TelegramService {
     // === SAFE CONTACT IMPORT ===
     
     private async safeImportContact(client: TelegramClient, phoneNumber: string, accountId: number): Promise<any> {
+        // Check daily import limit
+        if (!checkDailyImportLimit(accountId)) {
+            await storage.addLog(accountId, "warn", "Daily contact import limit reached. Skipping phone number.");
+            throw new Error("Daily import limit reached");
+        }
+        
         try {
-            // Import single contact with delay
+            // Wait 3-5 seconds BEFORE import (pacing)
+            const preDelay = 3000 + Math.random() * 2000;
+            await new Promise(r => setTimeout(r, preDelay));
+            
+            // Import single contact
             const result = await client.invoke(
                 new Api.contacts.ImportContacts({
                     contacts: [
@@ -187,6 +240,13 @@ export class TelegramService {
                 })
             );
             
+            // Increment import counter
+            incrementDailyImportCount(accountId);
+            
+            // Wait 3-5 seconds AFTER import (cooldown)
+            const postDelay = 3000 + Math.random() * 2000;
+            await new Promise(r => setTimeout(r, postDelay));
+            
             if (result.users && result.users.length > 0) {
                 await storage.addLog(accountId, "info", `Imported contact: ${phoneNumber}`);
                 return result.users[0];
@@ -194,10 +254,10 @@ export class TelegramService {
             
             return null;
         } catch (err: any) {
-            if (err.message?.includes("FLOOD_WAIT")) {
+            if (err.message?.includes("FLOOD_WAIT") || err.errorMessage === "FLOOD_WAIT") {
                 const waitSeconds = err.seconds || 60;
                 floodWaitUntil.set(accountId, Date.now() + (waitSeconds + SAFE_LIMITS.floodWaitBuffer) * 1000);
-                await storage.addLog(accountId, "warn", `Flood wait: ${waitSeconds}s`);
+                await storage.addLog(accountId, "warn", `Import flood wait: ${waitSeconds}s`);
             }
             throw err;
         }
@@ -248,12 +308,14 @@ export class TelegramService {
                 return;
             }
 
-            // Check delays - enforce safe minimums
-            const lastSent = lastSentTime.get(accountId) || 0;
-            const now = Date.now();
-            const minDelay = Math.max(account.minDelaySeconds || 60, SAFE_LIMITS.minDelaySeconds) * 1000;
-            
-            if (now - lastSent < minDelay) return; 
+            // Check if it's time for next send (respects randomized delays)
+            if (!canSendNow(accountId)) {
+                const remaining = Math.ceil((nextSendTime.get(accountId)! - Date.now()) / 1000);
+                if (remaining > 0) {
+                    await storage.updateAccount(accountId, { status: `waiting (${remaining}s)` });
+                }
+                return;
+            } 
 
             // Get pending recipient
             const recipient = await storage.getNextPendingRecipient(accountId);
@@ -292,20 +354,14 @@ export class TelegramService {
                     try {
                         targetEntity = await client.getEntity(phoneNumber);
                     } catch {
-                        // Not in contacts - try safe import
+                        // Not in contacts - try safe import (has internal delays)
                         await storage.addLog(accountId, "info", `Importing contact: ${phoneNumber}`);
-                        
-                        // Wait before import to be safe
-                        await new Promise(r => setTimeout(r, 3000));
                         
                         const user = await this.safeImportContact(client, phoneNumber, accountId);
                         if (!user) {
                             throw new Error(`User not found on Telegram: ${phoneNumber}`);
                         }
                         targetEntity = user;
-                        
-                        // Extra delay after import
-                        await new Promise(r => setTimeout(r, 5000));
                     }
                 }
                 
@@ -314,9 +370,11 @@ export class TelegramService {
                 await storage.updateRecipientStatus(recipient.id, 'sent');
                 await storage.addLog(accountId, "info", `Sent to ${recipient.identifier}`);
                 
-                // Update counters
-                lastSentTime.set(accountId, Date.now());
+                // Update counters and schedule next send with randomized delay
                 incrementDailyCount(accountId);
+                const minDelay = Math.max(account.minDelaySeconds || 60, SAFE_LIMITS.minDelaySeconds);
+                const maxDelay = Math.max(account.maxDelaySeconds || 180, minDelay);
+                scheduleNextSend(accountId, minDelay, maxDelay);
                 
                 await storage.updateAccount(accountId, { status: "waiting" });
                 
@@ -325,11 +383,16 @@ export class TelegramService {
                 await storage.updateRecipientStatus(recipient.id, 'failed', errorMsg);
                 await storage.addLog(accountId, "error", `Failed: ${recipient.identifier} - ${errorMsg}`);
                 
-                // Handle FLOOD_WAIT - don't stop, just wait
+                // Handle FLOOD_WAIT - wait and schedule next send with extra delay
                 if (errorMsg.includes("FLOOD_WAIT") || err.errorMessage === "FLOOD_WAIT") {
                     const waitSeconds = err.seconds || 120;
-                    floodWaitUntil.set(accountId, Date.now() + (waitSeconds + SAFE_LIMITS.floodWaitBuffer) * 1000);
-                    await storage.addLog(accountId, "warn", `Flood wait triggered: ${waitSeconds}s`);
+                    const waitUntil = Date.now() + (waitSeconds + SAFE_LIMITS.floodWaitBuffer) * 1000;
+                    floodWaitUntil.set(accountId, waitUntil);
+                    // Schedule next send with extra delay after flood wait ends (wait + minDelay in ms)
+                    const minDelaySeconds = Math.max(account.minDelaySeconds || 60, SAFE_LIMITS.minDelaySeconds);
+                    const postWaitDelayMs = minDelaySeconds * 1000;
+                    nextSendTime.set(accountId, waitUntil + postWaitDelayMs);
+                    await storage.addLog(accountId, "warn", `Flood wait triggered: ${waitSeconds}s. Resuming in ${waitSeconds + minDelaySeconds}s.`);
                     await storage.updateAccount(accountId, { status: `flood wait: ${waitSeconds}s` });
                     return;
                 }

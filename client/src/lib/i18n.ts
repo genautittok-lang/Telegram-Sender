@@ -99,6 +99,8 @@ export const translations = {
     noTemplateSet: 'No template set',
     created: 'Created',
     sharedTemplate: 'Shared Message Template',
+    apiCredentials: 'API Credentials (recommended)',
+    apiCredentialsHint: 'Using your own API credentials reduces ban risk. Get them at my.telegram.org/apps',
   },
   uk: {
     dashboard: 'Панель',
@@ -197,6 +199,8 @@ export const translations = {
     noTemplateSet: 'Шаблон не встановлено',
     created: 'Створено',
     sharedTemplate: 'Спільний шаблон',
+    apiCredentials: 'API ключі (рекомендовано)',
+    apiCredentialsHint: 'Використання власних API ключів зменшує ризик бану. Отримайте на my.telegram.org/apps',
   },
   ru: {
     dashboard: 'Панель',
@@ -295,6 +299,8 @@ export const translations = {
     noTemplateSet: 'Шаблон не установлен',
     created: 'Создано',
     sharedTemplate: 'Общий шаблон',
+    apiCredentials: 'API ключи (рекомендуется)',
+    apiCredentialsHint: 'Использование своих API ключей уменьшает риск бана. Получите на my.telegram.org/apps',
   },
 };
 

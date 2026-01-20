@@ -78,11 +78,20 @@ Account scheduling options stored in database:
 
 ### Telegram API
 - **GramJS (telegram package)**: MTProto client library for Telegram API access
-- **Simplified Authentication**: Users only need phone number + verification code (no API credentials required)
-- Default API credentials (Telegram Desktop public credentials) are used server-side
-- Optional: Set `TELEGRAM_API_ID` and `TELEGRAM_API_HASH` environment variables to use custom credentials
-- 2FA password handling: Uses SRP protocol via `computeCheck` from GramJS Password module
-- Sessions stored as encrypted strings in database
+- **Per-Account API Credentials**: Users can provide custom API ID/Hash during account auth to reduce ban risk
+- **Fallback Credentials**: If not provided, uses Telegram Desktop public credentials (higher ban risk for bulk messaging)
+- **2FA Password Handling**: Uses SRP protocol via `computeCheck` from GramJS Password module
+- **Sessions**: Stored as encrypted StringSession in database with per-account API credentials
+
+### Anti-Ban Safety Features (server/telegram.ts)
+- **Enforced Minimum Delays**: At least 30 seconds between messages (configurable higher)
+- **Randomized Delays**: Messages sent with random delay between min/max configured values
+- **Daily Message Limit**: Max 200 messages per account per day
+- **Daily Import Limit**: Max 50 contact imports per account per day
+- **Safe Contact Import**: 3-5 second delays before and after each phone number import
+- **FLOOD_WAIT Handling**: Automatic backoff with extra delay after wait period ends
+- **Gradual Resume**: After flood wait, waits additional minDelay before next message
+- **Critical Error Handling**: Stops account on AUTH_KEY, SESSION_REVOKED, USER_DEACTIVATED errors
 
 ### UI Components
 - **Radix UI**: Headless component primitives (dialog, dropdown, tabs, etc.)
