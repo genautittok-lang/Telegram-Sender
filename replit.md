@@ -95,6 +95,13 @@ Account scheduling options stored in database:
 - **FLOOD_WAIT Handling**: Automatic backoff with extra delay after wait period ends
 - **Gradual Resume**: After flood wait, waits additional minDelay before next message
 - **Critical Error Handling**: Stops account on AUTH_KEY, SESSION_REVOKED, USER_DEACTIVATED errors
+- **Proxy Support**: Optional SOCKS5/HTTP proxy via PROXY_URL environment variable
+- **TIMEOUT Error Suppression**: Network timeout errors are silently suppressed to reduce log noise
+
+### Test Message Feature
+- Accounts can send a test message to verify connectivity before bulk sending
+- Endpoint: POST `/api/accounts/:id/test-message` with `{ phone, message }`
+- Supports both @username and phone number formats
 
 ### UI Components
 - **Radix UI**: Headless component primitives (dialog, dropdown, tabs, etc.)

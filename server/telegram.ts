@@ -13,6 +13,38 @@ const KYIV_TIMEZONE = "Europe/Kyiv";
 const DEFAULT_API_ID = parseInt(process.env.TELEGRAM_API_ID || "2040", 10);
 const DEFAULT_API_HASH = process.env.TELEGRAM_API_HASH || "b18441a1ff607e10a989891a5462e627";
 
+// Proxy configuration from environment variable
+// Format: socks5://user:pass@host:port or http://host:port
+const PROXY_URL = process.env.PROXY_URL || "";
+
+// Parse proxy URL into GramJS format
+function getProxyConfig(): any {
+    if (!PROXY_URL) return undefined;
+    
+    try {
+        const url = new URL(PROXY_URL);
+        const isSocks = url.protocol === 'socks5:' || url.protocol === 'socks:';
+        
+        return {
+            ip: url.hostname,
+            port: parseInt(url.port) || (isSocks ? 1080 : 8080),
+            socksType: isSocks ? 5 : undefined,
+            username: url.username || undefined,
+            password: url.password || undefined,
+        };
+    } catch (e) {
+        console.warn("Invalid PROXY_URL format, ignoring proxy:", e);
+        return undefined;
+    }
+}
+
+// Normalize phone number to consistent E.164 format
+function normalizePhone(phone: string): string {
+    if (!phone) return '';
+    const digits = phone.replace(/\D/g, '');
+    return '+' + digits;
+}
+
 // Map to store active clients: accountId -> Client
 const activeClients = new Map<number, TelegramClient>();
 // Map to store last sent time: accountId -> timestamp (ms)
@@ -124,8 +156,10 @@ export class TelegramService {
             ? { apiId, apiHash } 
             : { apiId: DEFAULT_API_ID, apiHash: DEFAULT_API_HASH };
         
+        const proxyConfig = getProxyConfig();
         const client = new TelegramClient(new StringSession(""), credentials.apiId, credentials.apiHash, {
             connectionRetries: 5,
+            proxy: proxyConfig,
         });
         await client.connect();
         
@@ -143,8 +177,10 @@ export class TelegramService {
     }
 
     async testSms(phoneNumber: string) {
+        const proxyConfig = getProxyConfig();
         const client = new TelegramClient(new StringSession(""), DEFAULT_API_ID, DEFAULT_API_HASH, {
             connectionRetries: 5,
+            proxy: proxyConfig,
         });
         await client.connect();
         
@@ -163,8 +199,10 @@ export class TelegramService {
 
     async generateQrToken(): Promise<{ token: string; expires: number; qrId: string }> {
         const qrId = Math.random().toString(36).substring(2, 15);
+        const proxyConfig = getProxyConfig();
         const client = new TelegramClient(new StringSession(""), DEFAULT_API_ID, DEFAULT_API_HASH, {
             connectionRetries: 5,
+            proxy: proxyConfig,
         });
         await client.connect();
 
@@ -226,16 +264,33 @@ export class TelegramService {
                 // User has scanned QR and approved login
                 const auth = result.authorization;
                 if (auth instanceof Api.auth.Authorization) {
-                    const user = auth.user;
+                    const user = auth.user as Api.User;
                     const sessionString = (qrData.client.session as StringSession).save();
-                    const phoneNumber = (user as Api.User).phone || 'unknown';
+                    const rawPhone = user.phone || '';
+                    const userId = user.id?.toString() || '';
+                    
+                    // Prefer phone number, fallback to user ID
+                    let phoneNumber = '';
+                    if (rawPhone) {
+                        phoneNumber = normalizePhone(rawPhone);
+                    } else if (userId) {
+                        // Use Telegram user ID as identifier if no phone
+                        phoneNumber = `@id${userId}`;
+                    }
+                    
+                    console.log(`QR Login success: raw phone="${rawPhone}", userId="${userId}", identifier="${phoneNumber}"`);
                     
                     qrData.client.disconnect();
                     this.qrClients.delete(qrId);
                     
+                    if (!phoneNumber) {
+                        console.error('QR Login failed: no phone number or user ID available');
+                        return { status: 'expired' };
+                    }
+                    
                     return { 
                         status: 'success', 
-                        phoneNumber: '+' + phoneNumber,
+                        phoneNumber,
                         sessionString 
                     };
                 }
@@ -328,11 +383,12 @@ export class TelegramService {
         }
 
         const { apiId, apiHash } = getApiCredentials(account);
+        const proxyConfig = getProxyConfig();
         const client = new TelegramClient(
             new StringSession(account.sessionString),
             apiId,
             apiHash,
-            { connectionRetries: 5 }
+            { connectionRetries: 5, proxy: proxyConfig }
         );
 
         try {
@@ -397,16 +453,14 @@ export class TelegramService {
         try {
             // Use per-account credentials if set, otherwise defaults
             const { apiId, apiHash } = getApiCredentials(account);
+            const proxyConfig = getProxyConfig();
             
             const client = new TelegramClient(
                 new StringSession(account.sessionString),
                 apiId,
                 apiHash,
-                { connectionRetries: 5 }
+                { connectionRetries: 5, proxy: proxyConfig }
             );
-
-            // Proxy setup would go here if account.proxyUrl is set
-            // GramJS supports proxies in connection options.
             
             await client.connect();
             activeClients.set(account.id, client);
@@ -613,7 +667,11 @@ export class TelegramService {
             }
 
         } catch (err: any) {
-            console.error(`Error processing account ${accountId}:`, err);
+            // Suppress TIMEOUT errors - they're normal network hiccups
+            const errMsg = err?.message || String(err);
+            if (!errMsg.includes('TIMEOUT') && !errMsg.includes('timeout')) {
+                console.error(`Error processing account ${accountId}:`, err);
+            }
         }
     }
 

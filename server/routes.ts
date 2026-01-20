@@ -175,21 +175,25 @@ export async function registerRoutes(
           const result = await telegramService.checkQrStatus(req.params.qrId);
           
           if (result.status === 'success' && result.phoneNumber && result.sessionString) {
+              console.log(`QR Login: saving account for phone ${result.phoneNumber}`);
               // Save the account
               const existing = await storage.getAccountByPhone(result.phoneNumber);
               if (existing) {
+                  console.log(`QR Login: updating existing account ${existing.id}`);
                   await storage.updateAccount(existing.id, { 
                       sessionString: result.sessionString,
                       status: 'idle' 
                   });
               } else {
-                  await storage.createAccount({ 
+                  console.log(`QR Login: creating new account for ${result.phoneNumber}`);
+                  const newAccount = await storage.createAccount({ 
                       phoneNumber: result.phoneNumber, 
                       sessionString: result.sessionString,
                       status: 'idle',
                       minDelaySeconds: 60,
                       maxDelaySeconds: 180
                   });
+                  console.log(`QR Login: created account with id ${newAccount.id}`);
               }
           }
           
@@ -200,6 +204,7 @@ export async function registerRoutes(
               expires: result.expires,
           });
       } catch (err: any) {
+          console.error(`QR Login error:`, err);
           res.status(400).json({ message: err.message });
       }
   });

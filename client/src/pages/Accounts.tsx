@@ -130,7 +130,6 @@ function SettingsDialog({ account }: { account: any }) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [template, setTemplate] = useState(account.messageTemplate || "");
-  const [proxyUrl, setProxyUrl] = useState(account.proxyUrl || "");
   const [scheduleType, setScheduleType] = useState(account.scheduleType || "manual");
   const [scheduleTime, setScheduleTime] = useState(account.scheduleTime || "09:00");
   const [scheduleDays, setScheduleDays] = useState<string[]>(account.scheduleDays || []);
@@ -141,7 +140,6 @@ function SettingsDialog({ account }: { account: any }) {
     await update.mutateAsync({ 
       id: account.id, 
       messageTemplate: template,
-      proxyUrl: proxyUrl || null,
       scheduleType,
       scheduleTime,
       scheduleDays
@@ -199,23 +197,6 @@ function SettingsDialog({ account }: { account: any }) {
               data-testid="textarea-message-template"
             />
             <p className="text-xs text-muted-foreground">{t('templateOverride')}</p>
-          </div>
-
-          <div className="border-t border-border pt-4">
-            <h4 className="text-sm font-medium mb-4">{t('advanced')}</h4>
-            <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label>{t('proxyUrl')}</Label>
-                <Input 
-                  placeholder="socks5://user:pass@host:port"
-                  className="font-mono"
-                  value={proxyUrl}
-                  onChange={(e) => setProxyUrl(e.target.value)}
-                  data-testid="input-proxy-url"
-                />
-                <p className="text-xs text-muted-foreground">{t('proxyHint')}</p>
-              </div>
-            </div>
           </div>
 
           <div className="border-t border-border pt-4">
