@@ -181,48 +181,25 @@ export class TelegramService {
             await storage.updateAccount(accountId, { status: "sending" });
             
             try {
-                // Determine if identifier is a phone number or username
+                // For usernames (@username) - send directly
+                // For phone numbers - try to get entity first (only works if already in contacts)
+                let targetEntity: any = recipient.identifier;
+                
                 const isPhoneNumber = recipient.identifier.startsWith('+') || /^\d+$/.test(recipient.identifier);
                 
-                let targetEntity: any;
-                
                 if (isPhoneNumber) {
-                    // For phone numbers, we need to import the contact first
                     const phoneNumber = recipient.identifier.startsWith('+') 
                         ? recipient.identifier 
                         : '+' + recipient.identifier;
                     
                     try {
-                        // Try to import the contact
-                        const result = await client.invoke(
-                            new Api.contacts.ImportContacts({
-                                contacts: [
-                                    new Api.InputPhoneContact({
-                                        clientId: BigInt(Math.floor(Math.random() * 1000000)) as any,
-                                        phone: phoneNumber,
-                                        firstName: "Contact",
-                                        lastName: phoneNumber.slice(-4),
-                                    }),
-                                ],
-                            })
-                        );
-                        
-                        if (result.users && result.users.length > 0) {
-                            targetEntity = result.users[0];
-                        } else {
-                            throw new Error("User not found on Telegram or privacy settings prevent contact");
-                        }
-                    } catch (importErr: any) {
-                        // Try to get entity directly (in case already in contacts)
-                        try {
-                            targetEntity = await client.getEntity(phoneNumber);
-                        } catch {
-                            throw new Error(`Cannot find Telegram user with phone ${phoneNumber}`);
-                        }
+                        // Only try to get entity if it's already in contacts
+                        // DO NOT use ImportContacts - it triggers Telegram's anti-spam
+                        targetEntity = await client.getEntity(phoneNumber);
+                    } catch {
+                        // Phone not in contacts - skip this recipient
+                        throw new Error(`Phone ${phoneNumber} not in contacts. Add manually or use username instead.`);
                     }
-                } else {
-                    // For usernames, use directly
-                    targetEntity = recipient.identifier;
                 }
                 
                 await client.sendMessage(targetEntity, { message: messageText });
