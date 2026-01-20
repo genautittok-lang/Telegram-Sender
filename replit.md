@@ -50,7 +50,19 @@ Key tables:
 The `/shared` directory contains code used by both frontend and backend:
 - `schema.ts`: Drizzle table definitions and Zod schemas (via drizzle-zod)
 - `routes.ts`: API endpoint definitions with path patterns and response schemas
-- `i18n.ts`: Translation strings for multi-language support
+
+### Internationalization (i18n)
+- **Location**: `client/src/lib/i18n.ts`
+- **Languages**: Ukrainian (default), Russian, English
+- **Context**: LanguageContext wraps the entire app in App.tsx
+- **Storage**: Language preference saved to localStorage
+- **Phone Parsing**: `parseRecipientsList()` extracts Russian mobile numbers from formats like "Name — Date — +79001234567" and normalizes them to +7 format
+
+### Scheduling System
+Account scheduling options stored in database:
+- `scheduleType`: 'manual' | 'daily' | 'weekly'
+- `scheduleTime`: Time string like "09:00"
+- `scheduleDays`: Array of day codes like ['mon', 'wed', 'fri'] for weekly scheduling
 
 ### Build Process
 - Development: Vite dev server with HMR proxied through Express
