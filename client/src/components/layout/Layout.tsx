@@ -1,21 +1,16 @@
 import { Sidebar } from "./Sidebar";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
-interface LayoutProps {
-  children: React.ReactNode;
-}
-
-export function Layout({ children }: LayoutProps) {
+export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-background">
       <Sidebar />
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        <ScrollArea className="flex-1">
-          <div className="p-8 max-w-7xl mx-auto w-full space-y-8">
+      <main className="flex-1 overflow-x-hidden pt-16 lg:pt-0">
+        <div className="container mx-auto p-4 lg:p-8 max-w-7xl">
+          <div className="flex flex-col gap-8">
             {children}
           </div>
-        </ScrollArea>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }

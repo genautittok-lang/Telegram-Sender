@@ -121,28 +121,28 @@ export function Sidebar() {
           variant="outline" 
           size="icon" 
           onClick={() => setIsOpen(true)}
-          className="bg-card shadow-lg"
+          className="bg-card shadow-lg h-10 w-10"
         >
           <Menu className="h-6 w-6" />
         </Button>
       </div>
 
       {/* Sidebar Desktop */}
-      <aside className="hidden lg:flex flex-col w-64 border-r border-border bg-card h-screen sticky top-0">
+      <aside className="hidden lg:flex flex-col w-64 border-r border-border bg-card h-screen sticky top-0 shrink-0">
         {sidebarContent}
       </aside>
 
       {/* Sidebar Mobile Overlay */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100] lg:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
       
       {/* Sidebar Mobile Drawer */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 w-64 bg-card border-r border-border z-50 transition-transform duration-300 lg:hidden",
+        "fixed inset-y-0 left-0 w-64 bg-card border-r border-border z-[101] transition-transform duration-300 lg:hidden",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         {sidebarContent}

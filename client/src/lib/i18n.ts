@@ -348,46 +348,73 @@ export function extractPhoneNumber(line: string): string | null {
   return null;
 }
 
-export function extractRecipientData(line: string): { phone: string; name?: string; date?: string } | null {
-  // Pattern: Name — Date — Phone
+export function extractRecipientData(line: string): { identifier: string; name?: string; date?: string } | null {
+  // Pattern: Name — Date — Phone/Username
   // Example: Овчинникова Ольга Станиславовна — 2007-01-05 — +79500731429
+  // Example: @username
+  // Example: username
   const parts = line.split(/[—\-\|]/).map(p => p.trim());
   
-  let phone: string | null = null;
+  let identifier: string | null = null;
   let name: string | undefined;
   let date: string | undefined;
 
-  if (parts.length >= 3) {
-    // Try to find phone in parts
-    for (let i = 0; i < parts.length; i++) {
+  // If it's a single part, check if it's a username or phone
+  if (parts.length === 1) {
+    const raw = parts[0];
+    if (raw.startsWith('@')) {
+      return { identifier: raw };
+    }
+    const phone = extractPhoneNumber(raw);
+    if (phone) return { identifier: phone };
+    
+    // If it looks like a username (no spaces, reasonably long)
+    if (/^[a-zA-Z0-9_]{5,32}$/.test(raw)) {
+      return { identifier: '@' + raw };
+    }
+    return null;
+  }
+
+  // Multi-part line
+  if (parts.length >= 2) {
+    // Try to find identifier (phone or @username) in parts, usually the last one
+    for (let i = parts.length - 1; i >= 0; i--) {
       const p = parts[i];
-      const extracted = extractPhoneNumber(p);
-      if (extracted) {
-        phone = extracted;
-        // Assume name is the first part if not the phone
-        if (i > 0) name = parts[0];
-        // Assume date is the part before phone if 3+ parts
-        if (i > 1) date = parts[i-1];
+      
+      // Check for @username
+      if (p.startsWith('@')) {
+        identifier = p;
+      } else {
+        // Check for phone
+        const phone = extractPhoneNumber(p);
+        if (phone) identifier = phone;
+      }
+
+      if (identifier) {
+        // Name is usually the first part if it's not the identifier
+        if (i !== 0) name = parts[0];
+        // Date is often the middle part
+        if (parts.length >= 3 && i === parts.length - 1) {
+          date = parts[1];
+        }
         break;
       }
     }
-  } else {
-    phone = extractPhoneNumber(line);
   }
 
-  return phone ? { phone, name, date } : null;
+  return identifier ? { identifier, name, date } : null;
 }
 
 export function parseRecipientsList(text: string): string[] {
   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-  const phones: string[] = [];
+  const identifiers: string[] = [];
   
   for (const line of lines) {
     const data = extractRecipientData(line);
     if (data) {
-      phones.push(data.phone);
+      identifiers.push(data.identifier);
     }
   }
   
-  return phones;
+  return identifiers;
 }
