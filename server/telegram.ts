@@ -1,12 +1,14 @@
 import { TelegramClient, Api } from "telegram";
 import { StringSession } from "telegram/sessions";
+import { computeCheck } from "telegram/Password";
 import { storage } from "./storage";
 import { type Account } from "@shared/schema";
 import { randomInt } from "crypto";
 
-// Default Telegram API credentials (Telegram Desktop public credentials)
-const DEFAULT_API_ID = 2040;
-const DEFAULT_API_HASH = "b18441a1ff607e10a989891a5462e627";
+// Telegram API credentials - Use env vars if set, otherwise fall back to Telegram Desktop public credentials
+// Note: These are publicly documented Telegram Desktop credentials, used by thousands of apps
+const DEFAULT_API_ID = parseInt(process.env.TELEGRAM_API_ID || "2040", 10);
+const DEFAULT_API_HASH = process.env.TELEGRAM_API_HASH || "b18441a1ff607e10a989891a5462e627";
 
 // Map to store active clients: accountId -> Client
 const activeClients = new Map<number, TelegramClient>();
@@ -59,13 +61,11 @@ export class TelegramService {
         } catch (e: any) {
             if (e.message.includes("SESSION_PASSWORD_NEEDED")) {
                 if (!password) throw new Error("2FA Password required");
-                await client.signInWithPassword(
-                    { apiId: DEFAULT_API_ID, apiHash: DEFAULT_API_HASH },
-                    {
-                        password: async () => password,
-                        onError: (err) => { throw err; },
-                    }
-                );
+                
+                // For 2FA, we need to get password info and compute SRP check
+                const passwordInfo = await client.invoke(new Api.account.GetPassword());
+                const passwordCheck = await computeCheck(passwordInfo, password);
+                await client.invoke(new Api.auth.CheckPassword({ password: passwordCheck }));
             } else {
                 throw e;
             }
