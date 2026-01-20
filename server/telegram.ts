@@ -320,6 +320,70 @@ export class TelegramService {
         return { sessionString, apiId, apiHash };
     }
 
+    // === TEST MESSAGE ===
+
+    async sendTestMessage(account: Account, phone: string, message: string) {
+        if (!account.sessionString) {
+            throw new Error("Account not authenticated");
+        }
+
+        const { apiId, apiHash } = getApiCredentials(account);
+        const client = new TelegramClient(
+            new StringSession(account.sessionString),
+            apiId,
+            apiHash,
+            { connectionRetries: 5 }
+        );
+
+        try {
+            await client.connect();
+            
+            // Clean the phone number
+            const cleanPhone = phone.replace(/\D/g, '');
+            const formattedPhone = cleanPhone.startsWith('+') ? cleanPhone : '+' + cleanPhone;
+
+            // Try to find user by phone
+            let entity: any = null;
+            
+            // First try as username if it starts with @
+            if (phone.startsWith('@')) {
+                entity = await client.getEntity(phone);
+            } else {
+                // Try to find by phone - may need to import contact
+                try {
+                    const result = await client.invoke(
+                        new Api.contacts.ImportContacts({
+                            contacts: [
+                                new Api.InputPhoneContact({
+                                    clientId: BigInt(Math.floor(Math.random() * 1000000)) as any,
+                                    phone: formattedPhone,
+                                    firstName: "Test",
+                                    lastName: "User",
+                                }),
+                            ],
+                        })
+                    );
+                    
+                    if (result.users && result.users.length > 0) {
+                        entity = result.users[0];
+                    }
+                } catch (e: any) {
+                    // If can't import, throw meaningful error
+                    throw new Error(`Cannot find Telegram user with phone ${formattedPhone}`);
+                }
+            }
+
+            if (!entity) {
+                throw new Error(`User not found: ${phone}`);
+            }
+
+            await client.sendMessage(entity, { message });
+            await storage.addLog(account.id, "info", `Test message sent to ${phone}`);
+        } finally {
+            await client.disconnect();
+        }
+    }
+
     // === WORKER MANAGEMENT ===
 
     async startAccount(account: Account) {

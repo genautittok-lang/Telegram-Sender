@@ -12,9 +12,10 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Play, Pause, Trash2, Settings2, Save, Clock } from "lucide-react";
+import { Play, Pause, Trash2, Settings2, Save, Clock, Send, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { useLanguage } from "@/lib/i18n";
+import { useToast } from "@/hooks/use-toast";
 
 const DAYS = [
   { key: 'mon', label: 'monday' },
@@ -127,19 +128,47 @@ function AccountRow({ account }: { account: any }) {
 function SettingsDialog({ account }: { account: any }) {
   const update = useUpdateAccount();
   const { t } = useLanguage();
+  const { toast } = useToast();
   const [template, setTemplate] = useState(account.messageTemplate || "");
+  const [proxyUrl, setProxyUrl] = useState(account.proxyUrl || "");
   const [scheduleType, setScheduleType] = useState(account.scheduleType || "manual");
   const [scheduleTime, setScheduleTime] = useState(account.scheduleTime || "09:00");
   const [scheduleDays, setScheduleDays] = useState<string[]>(account.scheduleDays || []);
+  const [testPhone, setTestPhone] = useState("");
+  const [testLoading, setTestLoading] = useState(false);
 
   const handleSave = async () => {
     await update.mutateAsync({ 
       id: account.id, 
       messageTemplate: template,
+      proxyUrl: proxyUrl || null,
       scheduleType,
       scheduleTime,
       scheduleDays
     });
+  };
+
+  const handleTestMessage = async () => {
+    if (!testPhone.trim()) return;
+    setTestLoading(true);
+    try {
+      const res = await fetch(`/api/accounts/${account.id}/test-message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: testPhone.trim(), message: template || 'Test message' })
+      });
+      if (res.ok) {
+        toast({ title: t('testMessageSuccess') });
+        setTestPhone("");
+      } else {
+        const data = await res.json();
+        toast({ title: t('testMessageFailed'), description: data.message, variant: 'destructive' });
+      }
+    } catch (e: any) {
+      toast({ title: t('testMessageFailed'), description: e.message, variant: 'destructive' });
+    } finally {
+      setTestLoading(false);
+    }
   };
 
   const toggleDay = (day: string) => {
@@ -170,6 +199,49 @@ function SettingsDialog({ account }: { account: any }) {
               data-testid="textarea-message-template"
             />
             <p className="text-xs text-muted-foreground">{t('templateOverride')}</p>
+          </div>
+
+          <div className="border-t border-border pt-4">
+            <h4 className="text-sm font-medium mb-4">{t('advanced')}</h4>
+            <div className="grid gap-4">
+              <div className="grid gap-2">
+                <Label>{t('proxyUrl')}</Label>
+                <Input 
+                  placeholder="socks5://user:pass@host:port"
+                  className="font-mono"
+                  value={proxyUrl}
+                  onChange={(e) => setProxyUrl(e.target.value)}
+                  data-testid="input-proxy-url"
+                />
+                <p className="text-xs text-muted-foreground">{t('proxyHint')}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-border pt-4">
+            <h4 className="text-sm font-medium mb-4 flex items-center gap-2">
+              <Send className="h-4 w-4" /> {t('testMessage')}
+            </h4>
+            <div className="grid gap-4">
+              <p className="text-xs text-muted-foreground">{t('testMessageHint')}</p>
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="+7 999 123 4567"
+                  value={testPhone}
+                  onChange={(e) => setTestPhone(e.target.value)}
+                  className="flex-1 font-mono"
+                  data-testid="input-test-phone"
+                />
+                <Button 
+                  onClick={handleTestMessage}
+                  disabled={testLoading || !testPhone.trim()}
+                  data-testid="button-send-test"
+                >
+                  {testLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+                  {t('sendTestMessage')}
+                </Button>
+              </div>
+            </div>
           </div>
 
           <div className="border-t border-border pt-4">

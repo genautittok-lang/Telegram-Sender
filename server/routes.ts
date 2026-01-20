@@ -204,6 +204,24 @@ export async function registerRoutes(
       }
   });
 
+  // Test message endpoint
+  app.post('/api/accounts/:id/test-message', async (req, res) => {
+      try {
+          const account = await storage.getAccount(Number(req.params.id));
+          if (!account) {
+              return res.status(404).json({ message: 'Account not found' });
+          }
+          const { phone, message } = req.body;
+          if (!phone || !message) {
+              return res.status(400).json({ message: 'Phone and message required' });
+          }
+          await telegramService.sendTestMessage(account, phone, message);
+          res.json({ success: true });
+      } catch (err: any) {
+          res.status(400).json({ message: err.message });
+      }
+  });
+
   // === CONTROL ===
 
   app.post(api.control.global.path, async (req, res) => {
