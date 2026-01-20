@@ -59,14 +59,13 @@ export class TelegramService {
         } catch (e: any) {
             if (e.message.includes("SESSION_PASSWORD_NEEDED")) {
                 if (!password) throw new Error("2FA Password required");
-                await client.signInWithPassword({
-                    apiId: undefined, // already set
-                    apiHash: undefined,
-                    password: password,
-                    phoneNumber, 
-                    phoneCodeHash, 
-                    phoneCode 
-                } as any); // Type cast due to varied signatures in gramjs versions
+                await client.signInWithPassword(
+                    { apiId: DEFAULT_API_ID, apiHash: DEFAULT_API_HASH },
+                    {
+                        password: async () => password,
+                        onError: (err) => { throw err; },
+                    }
+                );
             } else {
                 throw e;
             }
@@ -126,7 +125,8 @@ export class TelegramService {
     async runWorker() {
         // Run every 5 seconds
         setInterval(async () => {
-            for (const [accountId, client] of activeClients) {
+            const entries = Array.from(activeClients.entries());
+            for (const [accountId, client] of entries) {
                 await this.processAccount(accountId, client);
             }
         }, 5000);
