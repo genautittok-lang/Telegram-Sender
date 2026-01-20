@@ -319,30 +319,42 @@ export function useLanguage() {
 export function extractPhoneNumber(line: string): string | null {
   const cleaned = line.replace(/[\s\-\(\)]/g, '');
   
-  const phoneMatch = cleaned.match(/\+?[78]?(\d{10})/);
+  // Ukrainian numbers: +380XXXXXXXXX (12 digits total)
+  const uaMatch = cleaned.match(/\+?380(\d{9})/);
+  if (uaMatch) {
+    return '+380' + uaMatch[1];
+  }
   
-  if (phoneMatch) {
-    const fullMatch = phoneMatch[0];
-    const localPart = phoneMatch[1];
+  // Russian numbers: +7XXXXXXXXXX or 8XXXXXXXXXX (11 digits, local part starts with 9)
+  const ruMatch = cleaned.match(/\+?[78]?(\d{10})/);
+  if (ruMatch) {
+    const fullMatch = ruMatch[0];
+    const localPart = ruMatch[1];
     
+    // Russian mobile numbers start with 9
     if (!localPart.startsWith('9')) {
-      return null;
-    }
-    
-    if (fullMatch.startsWith('+7') && fullMatch.length === 12) {
-      return fullMatch;
-    }
-    if (fullMatch.startsWith('+8') && fullMatch.length === 12) {
+      // Not a Russian mobile, skip this match
+    } else {
+      if (fullMatch.startsWith('+7') && fullMatch.length === 12) {
+        return fullMatch;
+      }
+      if (fullMatch.startsWith('+8') && fullMatch.length === 12) {
+        return '+7' + localPart;
+      }
+      if ((fullMatch.startsWith('8') || fullMatch.startsWith('7')) && fullMatch.length === 11) {
+        return '+7' + localPart;
+      }
+      if (localPart.length === 10 && localPart.startsWith('9')) {
+        return '+7' + localPart;
+      }
       return '+7' + localPart;
     }
-    if ((fullMatch.startsWith('8') || fullMatch.startsWith('7')) && fullMatch.length === 11) {
-      return '+7' + localPart;
-    }
-    if (localPart.length === 10 && localPart.startsWith('9')) {
-      return '+7' + localPart;
-    }
-    
-    return '+7' + localPart;
+  }
+  
+  // Generic international format: +XXXXXXXXXXX (10-15 digits after +)
+  const intlMatch = cleaned.match(/^\+(\d{10,15})$/);
+  if (intlMatch) {
+    return '+' + intlMatch[1];
   }
   
   return null;
