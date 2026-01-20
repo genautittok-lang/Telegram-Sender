@@ -195,7 +195,12 @@ export class TelegramService {
     }
 
     // QR Code Login
-    private qrClients = new Map<string, { client: TelegramClient; token: Buffer; expires: number }>();
+    private qrClients = new Map<string, { 
+        client: TelegramClient; 
+        token: Buffer; 
+        expires: number;
+        resolved?: { phoneNumber: string; sessionString: string };
+    }>();
 
     async generateQrToken(): Promise<{ token: string; expires: number; qrId: string }> {
         const qrId = Math.random().toString(36).substring(2, 15);
@@ -216,17 +221,60 @@ export class TelegramService {
 
         if (result instanceof Api.auth.LoginToken) {
             const tokenBase64 = result.token.toString('base64url');
-            this.qrClients.set(qrId, { 
+            const qrData = { 
                 client, 
                 token: result.token, 
                 expires: result.expires 
+            };
+            this.qrClients.set(qrId, qrData);
+            
+            // Set up update handler to detect when user scans QR
+            client.addEventHandler(async (update: any) => {
+                if (update.className === 'UpdateLoginToken') {
+                    console.log('QR Login: UpdateLoginToken received');
+                    try {
+                        const loginResult = await client.invoke(
+                            new Api.auth.ExportLoginToken({
+                                apiId: DEFAULT_API_ID,
+                                apiHash: DEFAULT_API_HASH,
+                                exceptIds: [],
+                            })
+                        );
+                        
+                        if (loginResult instanceof Api.auth.LoginTokenSuccess) {
+                            const auth = loginResult.authorization;
+                            if (auth instanceof Api.auth.Authorization) {
+                                const user = auth.user as Api.User;
+                                const sessionString = (client.session as StringSession).save();
+                                const rawPhone = user.phone || '';
+                                const userId = user.id?.toString() || '';
+                                
+                                let phoneNumber = '';
+                                if (rawPhone) {
+                                    phoneNumber = normalizePhone(rawPhone);
+                                } else if (userId) {
+                                    phoneNumber = `@id${userId}`;
+                                }
+                                
+                                console.log(`QR Login success via update: phone="${phoneNumber}"`);
+                                
+                                const storedQrData = this.qrClients.get(qrId);
+                                if (storedQrData) {
+                                    storedQrData.resolved = { phoneNumber, sessionString };
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.log('QR update handler error:', e);
+                    }
+                }
             });
             
             // Auto-cleanup after 2 minutes
             setTimeout(() => {
-                const qrData = this.qrClients.get(qrId);
-                if (qrData) {
-                    qrData.client.disconnect();
+                const data = this.qrClients.get(qrId);
+                if (data && !data.resolved) {
+                    data.client.disconnect();
                     this.qrClients.delete(qrId);
                 }
             }, 120000);
@@ -245,6 +293,14 @@ export class TelegramService {
         const qrData = this.qrClients.get(qrId);
         if (!qrData) return { status: 'expired' };
 
+        // Check if already resolved via update handler
+        if (qrData.resolved) {
+            const { phoneNumber, sessionString } = qrData.resolved;
+            qrData.client.disconnect();
+            this.qrClients.delete(qrId);
+            return { status: 'success', phoneNumber, sessionString };
+        }
+
         const now = Math.floor(Date.now() / 1000);
         if (now > qrData.expires) {
             qrData.client.disconnect();
@@ -252,94 +308,13 @@ export class TelegramService {
             return { status: 'expired' };
         }
 
-        try {
-            // Re-export token to check if user has approved the QR login
-            // This is the correct way to poll - ExportLoginToken returns LoginTokenSuccess when user scans
-            const result = await qrData.client.invoke(
-                new Api.auth.ExportLoginToken({
-                    apiId: DEFAULT_API_ID,
-                    apiHash: DEFAULT_API_HASH,
-                    exceptIds: [],
-                })
-            );
-
-            if (result instanceof Api.auth.LoginTokenSuccess) {
-                // User has scanned QR and approved login
-                const auth = result.authorization;
-                if (auth instanceof Api.auth.Authorization) {
-                    const user = auth.user as Api.User;
-                    const sessionString = (qrData.client.session as StringSession).save();
-                    const rawPhone = user.phone || '';
-                    const userId = user.id?.toString() || '';
-                    
-                    // Prefer phone number, fallback to user ID
-                    let phoneNumber = '';
-                    if (rawPhone) {
-                        phoneNumber = normalizePhone(rawPhone);
-                    } else if (userId) {
-                        // Use Telegram user ID as identifier if no phone
-                        phoneNumber = `@id${userId}`;
-                    }
-                    
-                    console.log(`QR Login success: raw phone="${rawPhone}", userId="${userId}", identifier="${phoneNumber}"`);
-                    
-                    qrData.client.disconnect();
-                    this.qrClients.delete(qrId);
-                    
-                    if (!phoneNumber) {
-                        console.error('QR Login failed: no phone number or user ID available');
-                        return { status: 'expired' };
-                    }
-                    
-                    return { 
-                        status: 'success', 
-                        phoneNumber,
-                        sessionString 
-                    };
-                }
-            } else if (result instanceof Api.auth.LoginToken) {
-                // Still pending - update token and expires for next check
-                qrData.token = result.token;
-                qrData.expires = result.expires;
-                const tokenBase64 = result.token.toString('base64url');
-                return { 
-                    status: 'pending', 
-                    token: `tg://login?token=${tokenBase64}`,
-                    expires: result.expires 
-                };
-            } else if (result instanceof Api.auth.LoginTokenMigrateTo) {
-                // Need to migrate to different DC - re-export token on that DC
-                // For simplicity, we'll regenerate the QR
-                qrData.client.disconnect();
-                this.qrClients.delete(qrId);
-                return { status: 'expired' };
-            }
-            
-            // Return current token if no update
-            const tokenBase64 = qrData.token.toString('base64url');
-            return { 
-                status: 'pending',
-                token: `tg://login?token=${tokenBase64}`,
-                expires: qrData.expires
-            };
-        } catch (err: any) {
-            const errMsg = err.message || err.errorMessage || '';
-            console.log(`QR status check error: ${errMsg}`);
-            
-            if (errMsg.includes('AUTH_TOKEN_EXPIRED') || err.errorMessage === 'AUTH_TOKEN_EXPIRED') {
-                qrData.client.disconnect();
-                this.qrClients.delete(qrId);
-                return { status: 'expired' };
-            }
-            
-            // For any other errors (including AUTH_TOKEN_INVALID), return pending with current token
-            const tokenBase64 = qrData.token.toString('base64url');
-            return { 
-                status: 'pending',
-                token: `tg://login?token=${tokenBase64}`,
-                expires: qrData.expires
-            };
-        }
+        // Return pending with current token - don't call API, wait for update event
+        const tokenBase64 = qrData.token.toString('base64url');
+        return { 
+            status: 'pending',
+            token: `tg://login?token=${tokenBase64}`,
+            expires: qrData.expires
+        };
     }
 
     async signIn(phoneNumber: string, phoneCode: string, phoneCodeHash: string, password?: string) {
@@ -407,29 +382,31 @@ export class TelegramService {
             
             // First try as username if it starts with @
             if (phone.startsWith('@')) {
-                entity = await client.getEntity(phone);
+                try {
+                    entity = await client.getEntity(phone);
+                } catch (e: any) {
+                    throw new Error(`Username ${phone} not found in Telegram`);
+                }
             } else {
                 // Try to find by phone - may need to import contact
-                try {
-                    const result = await client.invoke(
-                        new Api.contacts.ImportContacts({
-                            contacts: [
-                                new Api.InputPhoneContact({
-                                    clientId: BigInt(Math.floor(Math.random() * 1000000)) as any,
-                                    phone: formattedPhone,
-                                    firstName: "Test",
-                                    lastName: "User",
-                                }),
-                            ],
-                        })
-                    );
-                    
-                    if (result.users && result.users.length > 0) {
-                        entity = result.users[0];
-                    }
-                } catch (e: any) {
-                    // If can't import, throw meaningful error
-                    throw new Error(`Cannot find Telegram user with phone ${formattedPhone}`);
+                const result = await client.invoke(
+                    new Api.contacts.ImportContacts({
+                        contacts: [
+                            new Api.InputPhoneContact({
+                                clientId: BigInt(Math.floor(Math.random() * 1000000)) as any,
+                                phone: formattedPhone,
+                                firstName: "Test",
+                                lastName: "User",
+                            }),
+                        ],
+                    })
+                );
+                
+                if (result.users && result.users.length > 0) {
+                    entity = result.users[0];
+                } else {
+                    // Phone not registered in Telegram
+                    throw new Error(`Phone ${formattedPhone} is not registered in Telegram or has privacy settings blocking contact imports`);
                 }
             }
 
