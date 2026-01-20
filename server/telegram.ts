@@ -233,13 +233,33 @@ export class TelegramService {
                 if (update.className === 'UpdateLoginToken') {
                     console.log('QR Login: UpdateLoginToken received');
                     try {
-                        const loginResult = await client.invoke(
+                        let loginResult = await client.invoke(
                             new Api.auth.ExportLoginToken({
                                 apiId: DEFAULT_API_ID,
                                 apiHash: DEFAULT_API_HASH,
                                 exceptIds: [],
                             })
                         );
+                        
+                        console.log(`QR Login: ExportLoginToken result type = ${loginResult.className}`);
+                        
+                        // Handle DC migration - user approved on different data center
+                        if (loginResult instanceof Api.auth.LoginTokenMigrateTo) {
+                            console.log(`QR Login: Migrating to DC ${loginResult.dcId}`);
+                            await client._switchDC(loginResult.dcId);
+                            
+                            // Import the token on the new DC
+                            const importResult = await client.invoke(
+                                new Api.auth.ImportLoginToken({
+                                    token: loginResult.token,
+                                })
+                            );
+                            console.log(`QR Login: ImportLoginToken result type = ${importResult.className}`);
+                            
+                            if (importResult instanceof Api.auth.LoginTokenSuccess) {
+                                loginResult = importResult;
+                            }
+                        }
                         
                         if (loginResult instanceof Api.auth.LoginTokenSuccess) {
                             const auth = loginResult.authorization;
@@ -264,8 +284,8 @@ export class TelegramService {
                                 }
                             }
                         }
-                    } catch (e) {
-                        console.log('QR update handler error:', e);
+                    } catch (e: any) {
+                        console.log('QR update handler error:', e.message || e);
                     }
                 }
             });
