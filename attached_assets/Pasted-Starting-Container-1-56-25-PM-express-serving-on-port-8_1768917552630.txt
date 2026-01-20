@@ -1,0 +1,33 @@
+Starting Container
+1:56:25 PM [express] serving on port 8080
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.cjs
+Database tables verified/created via pool
+1:56:42 PM [express] GET /api/accounts 200 in 14ms :: []
+Database tables verified/created via pool
+1:56:42 PM [express] GET /api/stats 200 in 193ms :: {"totalAccounts":0,"activeAccounts":0,"messagesSent":0,"errors":0}
+1:56:47 PM [express] GET /api/logs 200 in 14ms :: []
+1:56:55 PM [express] GET /api/accounts 304 in 15ms :: []
+1:56:55 PM [express] GET /api/stats 304 in 37ms :: {"totalAccounts":0,"activeAccounts":0,"messagesSent":0,"errors":0}
+1:57:00 PM [express] GET /api/accounts 304 in 3ms :: []
+1:57:00 PM [express] GET /api/stats 304 in 14ms :: {"totalAccounts":0,"activeAccounts":0,"messagesSent":0,"errors":0}
+1:57:05 PM [express] GET /api/accounts 304 in 5ms :: []
+1:57:05 PM [express] GET /api/stats 304 in 9ms :: {"totalAccounts":0,"activeAccounts":0,"messagesSent":0,"errors":0}
+1:57:22 PM [express] GET /api/accounts 304 in 5ms :: []
+1:57:22 PM [express] GET /api/stats 304 in 19ms :: {"totalAccounts":0,"activeAccounts":0,"messagesSent":0,"errors":0}
+1:57:27 PM [express] GET /api/accounts 304 in 6ms :: []
+1:57:27 PM [express] GET /api/stats 304 in 10ms :: {"totalAccounts":0,"activeAccounts":0,"messagesSent":0,"errors":0}
+1:57:40 PM [express] GET /api/accounts 200 in 7ms :: []
+1:57:40 PM [express] GET /api/stats 200 in 15ms :: {"totalAccounts":0,"activeAccounts":0,"messagesSent":0,"errors":0}
+1:57:45 PM [express] GET /api/accounts 304 in 3ms :: []
+1:57:45 PM [express] GET /api/stats 304 in 6ms :: {"totalAccounts":0,"activeAccounts":0,"messagesSent":0,"errors":0}
+1:57:50 PM [express] GET /api/logs 200 in 6ms :: []
+Database tables verified/created via pool
+Database tables verified/created via pool
+1:58:35 PM [express] GET /api/accounts 304 in 178ms :: []
+1:58:35 PM [express] GET /api/stats 304 in 182ms :: {"totalAccounts":0,"activeAccounts":0,"messagesSent":0,"errors":0}
+1:58:38 PM [express] GET /api/accounts 304 in 4ms :: []
+1:58:37 PM [express] GET /api/accounts 304 in 6ms :: []
+1:58:38 PM [express] GET /api/stats 304 in 8ms :: {"totalAccounts":0,"activeAccounts":0,"messagesSent":0,"errors":0}
+1:58:37 PM [express] GET /api/stats 304 in 14ms :: {"totalAccounts":0,"activeAccounts":0,"messagesSent":0,"errors":0}
