@@ -253,10 +253,13 @@ export class TelegramService {
         }
 
         try {
-            // Use ImportLoginToken to check if user has approved the QR login
+            // Re-export token to check if user has approved the QR login
+            // This is the correct way to poll - ExportLoginToken returns LoginTokenSuccess when user scans
             const result = await qrData.client.invoke(
-                new Api.auth.ImportLoginToken({
-                    token: qrData.token,
+                new Api.auth.ExportLoginToken({
+                    apiId: DEFAULT_API_ID,
+                    apiHash: DEFAULT_API_HASH,
+                    exceptIds: [],
                 })
             );
 
@@ -321,11 +324,7 @@ export class TelegramService {
             };
         } catch (err: any) {
             const errMsg = err.message || err.errorMessage || '';
-            
-            // Token not yet accepted - still pending
-            if (errMsg.includes('AUTH_TOKEN_INVALID') || err.errorMessage === 'AUTH_TOKEN_INVALID') {
-                return { status: 'pending' };
-            }
+            console.log(`QR status check error: ${errMsg}`);
             
             if (errMsg.includes('AUTH_TOKEN_EXPIRED') || err.errorMessage === 'AUTH_TOKEN_EXPIRED') {
                 qrData.client.disconnect();
@@ -333,8 +332,13 @@ export class TelegramService {
                 return { status: 'expired' };
             }
             
-            // Other errors - treat as pending
-            return { status: 'pending' };
+            // For any other errors (including AUTH_TOKEN_INVALID), return pending with current token
+            const tokenBase64 = qrData.token.toString('base64url');
+            return { 
+                status: 'pending',
+                token: `tg://login?token=${tokenBase64}`,
+                expires: qrData.expires
+            };
         }
     }
 
