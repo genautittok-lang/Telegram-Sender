@@ -4,10 +4,12 @@ import { useLogs } from "@/hooks/use-telegram-api";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { useLanguage } from "@/lib/i18n";
 
 export default function Logs() {
   const { data: logs } = useLogs();
   const bottomRef = useRef<HTMLDivElement>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (bottomRef.current) {
@@ -19,8 +21,8 @@ export default function Logs() {
     <Layout>
       <div className="flex flex-col h-[calc(100vh-8rem)]">
         <div className="mb-4">
-          <h2 className="text-3xl font-bold tracking-tight">System Logs</h2>
-          <p className="text-muted-foreground">Real-time activity log from all accounts.</p>
+          <h2 className="text-3xl font-bold tracking-tight">{t('logs')}</h2>
+          <p className="text-muted-foreground">{t('realtimeLogs')}</p>
         </div>
 
         <div className="flex-1 rounded-lg border border-border bg-black/50 font-mono text-sm shadow-inner overflow-hidden flex flex-col">
@@ -30,7 +32,7 @@ export default function Logs() {
               <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/50" />
             </div>
-            <span className="text-xs text-muted-foreground ml-2">console.log</span>
+            <span className="text-xs text-muted-foreground ml-2">{t('consoleLog')}</span>
           </div>
           
           <ScrollArea className="flex-1 p-4">
@@ -46,7 +48,7 @@ export default function Logs() {
                     log.level === 'warn' ? 'text-yellow-500' :
                     'text-blue-500'
                   )}>
-                    [{log.level}]
+                    [{log.level === 'error' ? t('error') : log.level === 'warn' ? t('warn') : t('info')}]
                   </span>
                   <span className={cn(
                     "break-all",

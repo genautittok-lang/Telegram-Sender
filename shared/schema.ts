@@ -32,6 +32,11 @@ export const accounts = pgTable("accounts", {
   minDelaySeconds: integer("min_delay_seconds").default(60),
   maxDelaySeconds: integer("max_delay_seconds").default(180),
   
+  // Scheduling
+  scheduleType: text("schedule_type").default("manual"), // manual, daily, weekly
+  scheduleTime: text("schedule_time"), // HH:MM format
+  scheduleDays: text("schedule_days").array(), // For weekly: ['mon', 'tue', 'wed', ...]
+  
   createdAt: timestamp("created_at").defaultNow(),
 });
 

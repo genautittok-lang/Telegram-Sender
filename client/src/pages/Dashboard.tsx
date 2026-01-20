@@ -6,24 +6,24 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Play, Pause, Square, Activity, Users, Send, AlertTriangle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/lib/i18n";
 
 export default function Dashboard() {
   const { data: stats } = useStats();
   const { data: accounts } = useAccounts();
   const control = useGlobalControl();
+  const { t } = useLanguage();
 
   const handleGlobal = (action: 'start_all' | 'pause_all' | 'stop_all') => {
-    if (confirm(`Are you sure you want to ${action.replace('_', ' ')}?`)) {
-      control.mutate(action);
-    }
+    control.mutate(action);
   };
 
   return (
     <Layout>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-          <p className="text-muted-foreground">Global overview of your Telegram automation.</p>
+          <h2 className="text-3xl font-bold tracking-tight">{t('dashboard')}</h2>
+          <p className="text-muted-foreground">{t('globalOverview')}</p>
         </div>
         <div className="flex gap-2">
           <Button 
@@ -31,49 +31,52 @@ export default function Dashboard() {
             className="border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/10"
             onClick={() => handleGlobal('start_all')}
             disabled={control.isPending}
+            data-testid="button-start-all"
           >
-            <Play className="mr-2 h-4 w-4" /> Start All
+            <Play className="mr-2 h-4 w-4" /> {t('startAll')}
           </Button>
           <Button 
             variant="outline" 
             className="border-yellow-500/20 text-yellow-500 hover:bg-yellow-500/10"
             onClick={() => handleGlobal('pause_all')}
             disabled={control.isPending}
+            data-testid="button-pause-all"
           >
-            <Pause className="mr-2 h-4 w-4" /> Pause All
+            <Pause className="mr-2 h-4 w-4" /> {t('pauseAll')}
           </Button>
           <Button 
             variant="outline" 
             className="border-red-500/20 text-red-500 hover:bg-red-500/10"
             onClick={() => handleGlobal('stop_all')}
             disabled={control.isPending}
+            data-testid="button-stop-all"
           >
-            <Square className="mr-2 h-4 w-4" /> Stop All
+            <Square className="mr-2 h-4 w-4" /> {t('stopAll')}
           </Button>
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard 
-          title="Total Accounts" 
+          title={t('totalAccounts')} 
           value={stats?.totalAccounts || 0} 
           icon={Users} 
           className="border-primary/20 bg-primary/5"
         />
         <StatCard 
-          title="Active Sessions" 
+          title={t('activeAccounts')} 
           value={stats?.activeAccounts || 0} 
           icon={Activity} 
           className="border-emerald-500/20 bg-emerald-500/5"
         />
         <StatCard 
-          title="Messages Sent" 
+          title={t('messagesSent')} 
           value={stats?.messagesSent || 0} 
           icon={Send} 
           className="border-blue-500/20 bg-blue-500/5"
         />
         <StatCard 
-          title="Recent Errors" 
+          title={t('errors')} 
           value={stats?.errors || 0} 
           icon={AlertTriangle} 
           className="border-red-500/20 bg-red-500/5"
@@ -81,11 +84,11 @@ export default function Dashboard() {
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-xl font-semibold">Active Accounts</h3>
+        <h3 className="text-xl font-semibold">{t('accounts')}</h3>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {accounts?.map((account) => (
             <Card key={account.id} className="bg-card border-border hover:border-primary/50 transition-colors">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium font-mono truncate">
                   {account.phoneNumber}
                 </CardTitle>
@@ -94,14 +97,17 @@ export default function Dashboard() {
               <CardContent>
                 <div className="mt-4 space-y-2">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Progress</span>
-                    <span>Running</span>
+                    <span>{t('progress')}</span>
+                    <span>{account.status === 'idle' ? t('idle') : 
+                           account.status === 'running' ? t('running') : 
+                           account.status === 'sending' ? t('sending') : 
+                           account.status === 'error' ? t('error') : t('waiting')}</span>
                   </div>
-                  <Progress value={account.status === 'sending' ? 66 : 0} className="h-1 bg-muted" />
+                  <Progress value={account.status === 'sending' ? 66 : account.isRunning ? 33 : 0} className="h-1 bg-muted" />
                 </div>
                 {account.lastError && (
                    <p className="mt-4 text-xs text-red-400 truncate" title={account.lastError}>
-                    Error: {account.lastError}
+                    {t('error')}: {account.lastError}
                    </p>
                 )}
               </CardContent>
@@ -109,7 +115,7 @@ export default function Dashboard() {
           ))}
           {!accounts?.length && (
             <div className="col-span-full py-12 text-center border-2 border-dashed border-border rounded-lg text-muted-foreground">
-              No accounts connected. Go to the Accounts page to add one.
+              {t('noAccountsConnected')}
             </div>
           )}
         </div>
@@ -121,7 +127,7 @@ export default function Dashboard() {
 function StatCard({ title, value, icon: Icon, className }: { title: string, value: number, icon: any, className?: string }) {
   return (
     <Card className={cn("border bg-card", className)}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
         <Icon className="h-4 w-4 text-muted-foreground" />
       </CardHeader>

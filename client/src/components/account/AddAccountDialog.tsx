@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRequestCode, useSignIn } from "@/hooks/use-telegram-api";
 import { Loader2, Plus } from "lucide-react";
+import { useLanguage } from "@/lib/i18n";
 
 export function AddAccountDialog() {
   const [open, setOpen] = useState(false);
@@ -17,6 +18,7 @@ export function AddAccountDialog() {
     password: "",
   });
   const [phoneCodeHash, setPhoneCodeHash] = useState("");
+  const { t } = useLanguage();
 
   const requestCode = useRequestCode();
   const signIn = useSignIn();
@@ -56,89 +58,103 @@ export function AddAccountDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2 bg-primary hover:bg-primary/90">
-          <Plus className="h-4 w-4" /> Add Account
+        <Button className="gap-2 bg-primary hover:bg-primary/90" data-testid="button-add-account">
+          <Plus className="h-4 w-4" /> {t('addAccount')}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] bg-card border-border">
         <DialogHeader>
-          <DialogTitle>Connect Telegram Account</DialogTitle>
+          <DialogTitle>{t('connectTelegram')}</DialogTitle>
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
           {step === 1 ? (
             <>
               <div className="grid gap-2">
-                <Label htmlFor="phone">Phone Number (International)</Label>
+                <Label htmlFor="phone">{t('phoneNumber')}</Label>
                 <Input
                   id="phone"
-                  placeholder="+1234567890"
+                  placeholder="+380501234567"
                   value={formData.phoneNumber}
                   onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
                   className="font-mono"
+                  data-testid="input-phone"
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="apiId">API ID</Label>
+                <Label htmlFor="apiId">{t('apiId')}</Label>
                 <Input
                   id="apiId"
                   placeholder="123456"
                   value={formData.apiId}
                   onChange={(e) => setFormData({ ...formData, apiId: e.target.value })}
                   className="font-mono"
+                  data-testid="input-api-id"
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="apiHash">API Hash</Label>
+                <Label htmlFor="apiHash">{t('apiHash')}</Label>
                 <Input
                   id="apiHash"
                   placeholder="abcdef123456..."
                   value={formData.apiHash}
                   onChange={(e) => setFormData({ ...formData, apiHash: e.target.value })}
                   className="font-mono"
+                  data-testid="input-api-hash"
                 />
               </div>
               <Button 
                 onClick={handleRequestCode} 
                 disabled={requestCode.isPending || !formData.phoneNumber || !formData.apiId || !formData.apiHash}
+                data-testid="button-send-code"
               >
                 {requestCode.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Send Code
+                {t('sendCode')}
               </Button>
             </>
           ) : (
             <>
               <div className="bg-muted p-3 rounded-md text-sm text-muted-foreground mb-2">
-                Code sent to {formData.phoneNumber}
+                {t('codeSentTo')} {formData.phoneNumber}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="code">Telegram Code</Label>
+                <Label htmlFor="code">{t('telegramCode')}</Label>
                 <Input
                   id="code"
                   placeholder="12345"
                   value={formData.phoneCode}
                   onChange={(e) => setFormData({ ...formData, phoneCode: e.target.value })}
                   className="font-mono tracking-widest text-center text-lg"
+                  data-testid="input-code"
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="password">2FA Password (Optional)</Label>
+                <Label htmlFor="password">{t('twoFactorPassword')}</Label>
                 <Input
                   id="password"
                   type="password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  data-testid="input-password"
                 />
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setStep(1)}>Back</Button>
+                <Button 
+                  variant="outline" 
+                  className="flex-1" 
+                  onClick={() => setStep(1)}
+                  data-testid="button-back"
+                >
+                  {t('back')}
+                </Button>
                 <Button 
                   className="flex-1" 
                   onClick={handleSignIn}
                   disabled={signIn.isPending || !formData.phoneCode}
+                  data-testid="button-verify"
                 >
                   {signIn.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Verify & Connect
+                  {t('verifyConnect')}
                 </Button>
               </div>
             </>

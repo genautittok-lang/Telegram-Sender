@@ -8,23 +8,25 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2, Layers } from "lucide-react";
 import { format } from "date-fns";
+import { useLanguage } from "@/lib/i18n";
 
 export default function Groups() {
   const { data: groups, isLoading } = useGroups();
+  const { t } = useLanguage();
 
   return (
     <Layout>
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Account Groups</h2>
-          <p className="text-muted-foreground">Organize accounts and share message templates.</p>
+          <h2 className="text-3xl font-bold tracking-tight">{t('groups')}</h2>
+          <p className="text-muted-foreground">{t('organizeGroups')}</p>
         </div>
         <CreateGroupDialog />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {isLoading ? (
-          <div>Loading groups...</div>
+          <div>{t('loadingAccounts')}</div>
         ) : (
           groups?.map((group) => (
             <GroupCard key={group.id} group={group} />
@@ -37,16 +39,17 @@ export default function Groups() {
 
 function GroupCard({ group }: { group: any }) {
   const deleteGroup = useDeleteGroup();
+  const { t } = useLanguage();
 
   const handleDelete = () => {
-    if (confirm(`Delete group "${group.name}"?`)) {
+    if (confirm(`${t('delete')} "${group.name}"?`)) {
       deleteGroup.mutate(group.id);
     }
   };
 
   return (
     <Card className="bg-card border-border relative group">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
         <div className="flex items-center gap-2">
             <Layers className="h-4 w-4 text-primary" />
             <CardTitle className="text-lg font-medium">{group.name}</CardTitle>
@@ -62,13 +65,13 @@ function GroupCard({ group }: { group: any }) {
       </CardHeader>
       <CardContent>
         <div className="mt-4">
-          <p className="text-xs text-muted-foreground font-mono mb-2">Message Template:</p>
+          <p className="text-xs text-muted-foreground font-mono mb-2">{t('sharedTemplate')}:</p>
           <div className="bg-muted p-3 rounded-md text-xs font-mono text-muted-foreground line-clamp-3 h-16">
-            {group.messageTemplate || "No template set"}
+            {group.messageTemplate || t('noTemplateSet')}
           </div>
         </div>
         <div className="mt-4 text-xs text-muted-foreground">
-          Created {group.createdAt ? format(new Date(group.createdAt), 'PP') : '-'}
+          {t('created')} {group.createdAt ? format(new Date(group.createdAt), 'PP') : '-'}
         </div>
       </CardContent>
     </Card>
@@ -78,6 +81,7 @@ function GroupCard({ group }: { group: any }) {
 function CreateGroupDialog({ group, trigger }: { group?: any, trigger?: React.ReactNode }) {
   const create = useCreateGroup();
   const update = useUpdateGroup();
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(group?.name || "");
   const [template, setTemplate] = useState(group?.messageTemplate || "");
@@ -95,28 +99,38 @@ function CreateGroupDialog({ group, trigger }: { group?: any, trigger?: React.Re
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {trigger || <Button className="gap-2"><Plus className="h-4 w-4" /> Create Group</Button>}
+        {trigger || (
+          <Button className="gap-2" data-testid="button-create-group">
+            <Plus className="h-4 w-4" /> {t('createGroup')}
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="bg-card border-border">
         <DialogHeader>
-          <DialogTitle>{group ? "Edit Group" : "Create Group"}</DialogTitle>
+          <DialogTitle>{group ? t('edit') : t('createGroup')}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <label className="text-sm font-medium">Name</label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Marketing Team A" />
+            <label className="text-sm font-medium">{t('groupName')}</label>
+            <Input 
+              value={name} 
+              onChange={(e) => setName(e.target.value)} 
+              placeholder="Team A"
+              data-testid="input-group-name"
+            />
           </div>
           <div className="grid gap-2">
-            <label className="text-sm font-medium">Shared Message Template</label>
+            <label className="text-sm font-medium">{t('sharedTemplate')}</label>
             <Textarea 
                 value={template} 
                 onChange={(e) => setTemplate(e.target.value)} 
-                placeholder="Hi {name}, checking in..."
-                className="font-mono h-32" 
+                placeholder="Hello! ..."
+                className="font-mono h-32"
+                data-testid="textarea-group-template"
             />
           </div>
-          <Button onClick={handleSubmit} disabled={!name}>
-            {group ? "Save Changes" : "Create Group"}
+          <Button onClick={handleSubmit} disabled={!name} data-testid="button-save-group">
+            {group ? t('saveChanges') : t('createGroup')}
           </Button>
         </div>
       </DialogContent>
