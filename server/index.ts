@@ -3,6 +3,14 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 
+// Suppress GramJS TIMEOUT errors from update loop (they're harmless but noisy)
+process.on('unhandledRejection', (reason: any) => {
+  if (reason?.message === 'TIMEOUT') {
+    return; // Silently ignore GramJS TIMEOUT errors
+  }
+  console.error('Unhandled rejection:', reason);
+});
+
 const app = express();
 const httpServer = createServer(app);
 
