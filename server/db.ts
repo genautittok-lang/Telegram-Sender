@@ -20,8 +20,9 @@ export const pool = new Pool({
   }
 });
 
-// Add automatic table creation on pool connect
-pool.on('connect', async (client) => {
+// 🔹 Функція ініціалізації БД — викликається ОДИН раз
+export async function initDatabase() {
+  const client = await pool.connect();
   try {
     await client.query(`
       CREATE TABLE IF NOT EXISTS accounts (
@@ -43,6 +44,7 @@ pool.on('connect', async (client) => {
         schedule_days TEXT[] DEFAULT '{}',
         created_at TIMESTAMP DEFAULT NOW()
       );
+
       CREATE TABLE IF NOT EXISTS account_groups (
         id SERIAL PRIMARY KEY,
         name TEXT NOT NULL,
@@ -50,6 +52,7 @@ pool.on('connect', async (client) => {
         message_template TEXT DEFAULT '',
         created_at TIMESTAMP DEFAULT NOW()
       );
+
       CREATE TABLE IF NOT EXISTS recipients (
         id SERIAL PRIMARY KEY,
         account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
@@ -59,6 +62,7 @@ pool.on('connect', async (client) => {
         sent_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT NOW()
       );
+
       CREATE TABLE IF NOT EXISTS logs (
         id SERIAL PRIMARY KEY,
         account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
@@ -67,10 +71,14 @@ pool.on('connect', async (client) => {
         created_at TIMESTAMP DEFAULT NOW()
       );
     `);
-    console.log("Database tables verified/created via pool");
+
+    console.log("Database tables verified/created");
   } catch (err) {
-    console.error("Error creating tables on connect:", err);
+    console.error("Error creating tables:", err);
+    throw err;
+  } finally {
+    client.release();
   }
-});
+}
 
 export const db = drizzle(pool, { schema });
